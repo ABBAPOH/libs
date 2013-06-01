@@ -1,0 +1,5 @@
+*.DS_Store
+*qbs.user
+*build/
+doc/html/*
+doc/qch/*

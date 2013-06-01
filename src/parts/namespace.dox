@@ -1,0 +1,5 @@
+/*!
+    \namespace Parts
+
+    \brief The Parts namespace contains framework for creating gui applications.
+*/
