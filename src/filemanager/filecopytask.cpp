@@ -21,7 +21,8 @@ FileCopyTaskPrivate::FileCopyTaskPrivate(FileCopyTask *qq) :
 
 void FileCopyTaskPrivate::onStateChanged(QFileCopier::State state)
 {
-    QFileCopier *copier = static_cast<QFileCopier *>(q_func()->sender());
+    QFileCopier *copier = qobject_cast<QFileCopier *>(sender());
+    Q_ASSERT(copier);
 
     if (state == QFileCopier::Gathering) {
         reset();
