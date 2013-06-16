@@ -24,6 +24,7 @@ class CommandsModel;
 class PARTS_EXPORT CommandsSettingsWidget : public QWidget
 {
     Q_OBJECT
+    Q_DISABLE_COPY(CommandsSettingsWidget)
 
 public:
     explicit CommandsSettingsWidget(QWidget *parent = 0);

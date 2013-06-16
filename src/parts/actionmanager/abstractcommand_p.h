@@ -12,8 +12,8 @@ public:
     AbstractCommandPrivate(AbstractCommand *qq) : q_ptr(qq) {}
     virtual ~AbstractCommandPrivate() {}
 
-    virtual void setText(const QString &text);
-    virtual void setIcon(const QIcon &icon);
+    virtual void onTextChanged(const QString &text) { Q_UNUSED(text); }
+    virtual void onIconChanged(const QIcon &icon) { Q_UNUSED(icon); }
 
     QByteArray id;
     QString text;

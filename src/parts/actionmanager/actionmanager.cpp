@@ -1,6 +1,6 @@
 #include "actionmanager.h"
 
-#include "command.h"
+#include "contextcommand.h"
 #include "commandcontainer.h"
 
 #include <QtCore/QDateTime>
@@ -80,7 +80,7 @@ ActionManager::~ActionManager()
 /*!
     Returns pointer to Command previously created with \id
 */
-Command * ActionManager::command(const QByteArray &id)
+Command *ActionManager::command(const QByteArray &id)
 {
     Q_D(ActionManager);
 
@@ -354,7 +354,7 @@ void ActionManager::setActionsEnabled(QWidget *w, bool enabled, Qt::ShortcutCont
     foreach (QAction *action, w->actions()) {
         QByteArray id = action->objectName().toUtf8();
         if (!id.isEmpty()) {
-            Command *c = qobject_cast<Command *>(d->commands.value(id));
+            ContextCommand *c = qobject_cast<ContextCommand *>(d->commands.value(id));
             if (c && action->shortcutContext() == context) {
                 if (enabled) {
                     c->setRealAction(action);

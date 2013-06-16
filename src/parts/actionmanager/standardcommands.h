@@ -7,7 +7,9 @@
 
 namespace Parts {
 
+class ApplicationCommand;
 class Command;
+class ContextCommand;
 
 namespace StandardCommands {
 
@@ -68,7 +70,9 @@ enum StandardCommand {
     StandardCommandCount
 };
 
-PARTS_EXPORT Command *standardCommand(StandardCommand command);
+PARTS_EXPORT Command *standardCommand(StandardCommand command, bool context);
+PARTS_EXPORT ApplicationCommand *applicationCommand(StandardCommand command);
+PARTS_EXPORT ContextCommand *contextCommand(StandardCommand command);
 PARTS_EXPORT void retranslateCommands();
 
 } // namespace StandardCommands

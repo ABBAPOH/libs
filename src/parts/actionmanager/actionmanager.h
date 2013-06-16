@@ -21,6 +21,7 @@ class PARTS_EXPORT ActionManager : public QObject
 {
     Q_OBJECT
     Q_DECLARE_PRIVATE(ActionManager)
+    Q_DISABLE_COPY(ActionManager)
 
 public:
     explicit ActionManager(QObject *parent = 0);

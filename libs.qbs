@@ -25,6 +25,7 @@ Project {
         "tests/extensionsystem/pluginspec/pluginspec.qbs",
         "tests/filemanager/filemanagerwidget/filemanagerwidget.qbs",
         "tests/io/kdesettings/kdesettings.qbs",
+        "tests/parts/actionmanager/actionmanager.qbs",
         "tests/parts/sharedproperties/sharedproperties.qbs"
     ]
 }

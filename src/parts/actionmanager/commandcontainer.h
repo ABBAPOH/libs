@@ -11,7 +11,7 @@ class QToolBar;
 
 namespace Parts {
 
-class Command;
+class ContextCommand;
 class CommandContainerPrivate;
 class PARTS_EXPORT CommandContainer : public AbstractCommand
 {
@@ -23,23 +23,24 @@ public:
     explicit CommandContainer(const QByteArray &id, QObject *parent = 0);
     ~CommandContainer();
 
-    void addCommand(AbstractCommand *command, const QByteArray &weight = QByteArray());
-    void addSeparator();
+    void addCommand(AbstractCommand *command, AbstractCommand *commandBefore = 0);
+    void addSeparator(AbstractCommand *commandBefore = 0);
+    void removeCommand(AbstractCommand *command);
 
     void clear();
 
     QList<AbstractCommand *> commands() const;
 
-    QMenu *menu(QWidget *parent = 0) const;
-    QMenuBar *menuBar() const;
-    QToolBar *toolBar(QWidget *parent = 0) const;
+signals:
+    void commandInserted(AbstractCommand *command, AbstractCommand *commandBefore);
+    void commandRemoved(AbstractCommand *command);
 
 private slots:
-    void onDestroy(QObject *);
+    void onDestroy(QObject *object);
 
 protected:
-    virtual QMenu *createMenu(QWidget *parent) const;
-    virtual QToolBar *createToolBar(QWidget *parent) const;
+    CommandContainer(CommandContainerPrivate &dd, const QByteArray &id, QObject *parent = 0);
+
     QAction *createAction(QObject *parent) const;
 };
 

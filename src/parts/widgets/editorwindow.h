@@ -55,7 +55,9 @@ public:
 
     QUrl url() const;
 
+#ifndef Q_OS_MAC
     QToolButton *menuBarButton() const;
+#endif
 
     static EditorWindow *currentWindow();
     static QList<EditorWindow*> windows();

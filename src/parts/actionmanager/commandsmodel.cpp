@@ -63,8 +63,6 @@ void CommandsModelPrivate::build()
             Command *c = qobject_cast<Command*>(cmd);
             if (!c)
                 continue;
-            if (c->isSeparator())
-                continue;
 
             CommandsModelItem *item = new CommandsModelItem(CommandsModelItem::Leaf, categoryItem);
             item->cmd = c;
@@ -175,7 +173,7 @@ Qt::ItemFlags CommandsModel::flags(const QModelIndex &index) const
 
     if (index.parent().isValid()) {
         CommandsModelItem *item = d_func()->item(index);
-        if (item->cmd->hasAttribute(Command::AttributeNonConfigurable))
+        if (!item->cmd->isConfigurable())
             return Qt::NoItemFlags;
 
         if (index.column() == 1)

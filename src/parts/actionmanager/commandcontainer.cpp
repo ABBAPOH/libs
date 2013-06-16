@@ -1,8 +1,9 @@
 #include "commandcontainer.h"
-#include "abstractcommand_p.h"
+#include "commandcontainer_p.h"
 
 #include "actionmanager.h"
 #include "command.h"
+#include "separator.h"
 
 #if QT_VERSION >= 0x050000
 #include <QtWidgets/QMenu>
@@ -14,57 +15,18 @@
 #include <QtGui/QToolBar>
 #endif
 
-namespace Parts {
-
-class CommandContainerPrivate : public AbstractCommandPrivate
-{
-    Q_DECLARE_PUBLIC(CommandContainer)
-public:
-    explicit CommandContainerPrivate(CommandContainer *qq) :
-        AbstractCommandPrivate(qq),
-        menu(0)
-    {}
-
-    void addAbstractCommand(AbstractCommand *cmd, const QByteArray &weight);
-    void setText(const QString &text);
-
-public:
-    QList<AbstractCommand *> commands;
-    QList<QByteArray> weights;
-    mutable QMenu *menu;
-};
-
-} // namespace Parts
-
 using namespace Parts;
 
-void CommandContainerPrivate::addAbstractCommand(AbstractCommand *cmd, const QByteArray &weight)
+void CommandContainerPrivate::onTextChanged(const QString &text)
 {
-    Q_Q(CommandContainer);
-
-    QByteArray w = weight;
-    if (w.isEmpty())
-        w = QString("%1").arg(commands.count(), 2, 10, QLatin1Char('0')).toLatin1();
-
-    QList<QByteArray>::iterator i = qLowerBound(weights.begin(), weights.end(), w);
-    int index = i - weights.begin();
-    commands.insert(index, cmd);
-    weights.insert(index, w);
-    QObject::connect(cmd, SIGNAL(destroyed(QObject*)), q, SLOT(onDestroy(QObject*)));
-}
-
-void CommandContainerPrivate::setText(const QString &text)
-{
-    Q_Q(CommandContainer);
-
-    if (this->text == text)
-        return;
-
-    this->text = text;
     if (menu)
         menu->setTitle(text);
+}
 
-    emit q->changed();
+void CommandContainerPrivate::onIconChanged(const QIcon &icon)
+{
+    if (menu)
+        menu->setIcon(icon);
 }
 
 /*!
@@ -73,8 +35,12 @@ void CommandContainerPrivate::setText(const QString &text)
     \brief The CommandContainer is an abstraction over menus and toolbars which allows
     to store Commands.
 
-    This class is very similar to QMenu, QMenuBar and QToolBar, except it stores Commands,
-    not QActions. However, each container can be represented using one of these classes.
+    This class serves as a "model" for a Parts::Menu/Parts::MenuBar or a
+    Parts::ToolBar. Those classes are wrappers around Qt classes that can
+    monitor current container state and update actions.
+
+    Typically, you should create a Container, fill it with Commands,
+    instantiate one or many Menus and set container to them.
 */
 
 /*!
@@ -82,6 +48,15 @@ void CommandContainerPrivate::setText(const QString &text)
 */
 CommandContainer::CommandContainer(const QByteArray &id, QObject *parent) :
     AbstractCommand(*new CommandContainerPrivate(this), id, parent)
+{
+    ActionManager::instance()->registerContainer(this);
+}
+
+/*
+    \internal
+*/
+CommandContainer::CommandContainer(CommandContainerPrivate &dd, const QByteArray &id, QObject *parent) :
+    AbstractCommand(dd, id, parent)
 {
     ActionManager::instance()->registerContainer(this);
 }
@@ -94,31 +69,37 @@ CommandContainer::~CommandContainer()
     ActionManager::instance()->unregisterContainer(this);
 }
 
-bool commandLessThen(QObject *o1, QObject *o2)
-{
-    QByteArray weight1, weight2;
-    weight1 = o1->property("CommandContainer::weight").toByteArray();
-    weight2 = o2->property("CommandContainer::weight").toByteArray();
-
-    return weight1 < weight2;
-}
-
 /*!
     \brief Adds \a command to a \a group.
 */
-void CommandContainer::addCommand(AbstractCommand *c, const QByteArray &weight)
+void CommandContainer::addCommand(AbstractCommand *command, AbstractCommand *commandBefore)
 {
-    if (!c)
+    if (!command)
         return;
 
     Q_D(CommandContainer);
 
-    d->addAbstractCommand(c, weight);
+    int index = d->commands.indexOf(commandBefore);
+    if (index == -1)
+        index = d->commands.count();
+
+    d->commands.insert(index, command);
+
+    QObject::connect(command, SIGNAL(destroyed(QObject*)), this, SLOT(onDestroy(QObject*)));
+    emit commandInserted(command, commandBefore);
 }
 
-void CommandContainer::addSeparator()
+void CommandContainer::addSeparator(AbstractCommand *commandBefore)
 {
-    addCommand(new Separator(this));
+    addCommand(new Separator(this), commandBefore);
+}
+
+void CommandContainer::removeCommand(AbstractCommand *command)
+{
+    if (!command)
+        return;
+
+    onDestroy(command);
 }
 
 /*!
@@ -128,8 +109,12 @@ void CommandContainer::clear()
 {
     Q_D(CommandContainer);
 
+    foreach (AbstractCommand *c, d->commands) {
+        emit commandRemoved(c);
+        if (c->parent() == this)
+            delete c;
+    }
     d->commands.clear();
-    d->weights.clear();
 }
 
 /*!
@@ -142,90 +127,28 @@ QList<AbstractCommand *> CommandContainer::commands() const
 }
 
 /*!
-    \brief Constructs QMenu that represents this CommandContainer.
-
-    QMenu will contain all groups within this container; each group is separated.
-    Triggering action in this menu will cause triggering action linked to Command.
-
-    You are responsible for deleting menu.
+    \internal
 */
-QMenu * CommandContainer::menu(QWidget *parent) const
-{
-    Q_D(const CommandContainer);
-
-    QMenu *menu = createMenu(parent);
-    menu->setTitle(text());
-    foreach (AbstractCommand *command, d->commands) {
-        menu->addAction(command->createAction(menu));
-    }
-
-    return menu;
-}
-
-/*!
-    \brief Constructs QMenuBar that represents this CommandContainer.
-
-    QMenuBar will contain all groups within this container.
-    Note, that no actions added to menu bar, only sub menus.
-
-    You are responsible for deleting menu bar.
-*/
-QMenuBar * CommandContainer::menuBar() const
-{
-    Q_D(const CommandContainer);
-
-    QMenuBar *menuBar = new QMenuBar;
-    foreach (AbstractCommand *command, d->commands) {
-        menuBar->addAction(command->createAction(menuBar));
-    }
-    return menuBar;
-}
-
-/*!
-    \brief Constructs QToolBar that represents this CommandContainer.
-
-    QToolBar will contain all groups within this container; each group is separated.
-    Note, that only actions added to tool bar.
-
-    You are responsible for deleting tool bar.
-*/
-QToolBar * CommandContainer::toolBar(QWidget *parent) const
-{
-    Q_D(const CommandContainer);
-
-    QToolBar *toolBar = createToolBar(parent);
-    foreach (AbstractCommand *command, d->commands) {
-        toolBar->addAction(command->createAction(toolBar));
-    }
-    return toolBar;
-}
-
-void CommandContainer::onDestroy(QObject *o)
+void CommandContainer::onDestroy(QObject *object)
 {
     Q_D(CommandContainer);
 
-    AbstractCommand *c = static_cast<AbstractCommand *>(o);
-    int index = d->commands.indexOf(c);
+    AbstractCommand *command = static_cast<AbstractCommand *>(object);
+    int index = d->commands.indexOf(command);
     d->commands.removeAt(index);
-    d->weights.removeAt(index);
+    emit commandRemoved(command);
 }
 
-QMenu * CommandContainer::createMenu(QWidget * /*parent*/) const
+/*!
+    \reimp
+*/
+QAction * CommandContainer::createAction(QObject * /*parent*/) const
 {
     Q_D(const CommandContainer);
 
-    if (!d->menu)
-        d->menu = new QMenu;
-
-    return d->menu;
-}
-
-QToolBar * CommandContainer::createToolBar(QWidget *parent) const
-{
-    return new QToolBar(parent);
-}
-
-QAction * CommandContainer::createAction(QObject *parent) const
-{
-    return menu(qobject_cast<QWidget*>(parent))->menuAction();
+    if (!d->menu) {
+        d->menu = new Menu;
+        d->menu->setContainer(const_cast<CommandContainer*>(this));
+    }
+    return d->menu->menuAction();
 }

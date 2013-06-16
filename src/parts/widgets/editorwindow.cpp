@@ -3,6 +3,7 @@
 
 #include "actionmanager/actionmanager.h"
 #include "actionmanager/commandcontainer.h"
+#include "actionmanager/menubar.h"
 #include "abstractdocument.h"
 #include "abstracteditor.h"
 #include "ihistory.h"
@@ -60,14 +61,16 @@ EditorWindow::EditorWindow(QWidget *parent) :
     d->retranslateUi();
 
 #ifndef Q_OS_MAC
-    setMenuBar(ActionManager::instance()->container("MenuBar")->menuBar());
-#endif
+    MenuBar * menuBar = new MenuBar(this);
+    menuBar->setContainer("MenuBar");
+    setMenuBar(menuBar);
 
     d->menuBarButton = new QToolButton(this);
-    d->menuBarButton->setMenu(ActionManager::instance()->container("MenuBar")->menu(d->menuBarButton));
+//    d->menuBarButton->setMenu(ActionManager::instance()->container("MenuBar")->menu(d->menuBarButton));
     d->menuBarButton->setPopupMode(QToolButton::InstantPopup);
     d->menuBarButton->setText(tr("Menu"));
     d->menuBarButton->setIcon(QIcon(":/guisystem/icons/menu.png"));
+#endif
 
     QSettings settings;
     settings.beginGroup("MainWindow");
@@ -182,8 +185,8 @@ void EditorWindow::setMenuVisible(bool visible)
 #ifndef Q_OS_MAC
     if (menuBar())
         menuBar()->setVisible(d->menuVisible);
-#endif
     d->menuBarButton->setVisible(!d->menuVisible);
+#endif
 
     QSettings settings;
     settings.beginGroup("MainWindow");
@@ -202,12 +205,14 @@ QUrl EditorWindow::url() const
     return QUrl();
 }
 
+#ifndef Q_OS_MAC
 QToolButton *EditorWindow::menuBarButton() const
 {
     Q_D(const EditorWindow);
 
     return d->menuBarButton;
 }
+#endif
 
 EditorWindow * EditorWindow::currentWindow()
 {

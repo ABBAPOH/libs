@@ -42,7 +42,9 @@ public:
     QAction *actions[EditorWindow::ActionCount];
 
     bool menuVisible;
+#ifndef Q_OS_MAC
     QToolButton *menuBarButton;
+#endif
 
 private:
     EditorWindow *q_ptr;

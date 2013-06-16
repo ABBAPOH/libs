@@ -3,24 +3,6 @@
 
 using namespace Parts;
 
-void AbstractCommandPrivate::setText(const QString &text)
-{
-    Q_Q(AbstractCommand);
-    if (this->text == text)
-        return;
-
-    this->text = text;
-    emit q->changed();
-}
-
-void AbstractCommandPrivate::setIcon(const QIcon &icon)
-{
-    Q_Q(AbstractCommand);
-
-    this->icon = icon;
-    emit q->changed();
-}
-
 /*!
     \class Parts::AbstractCommand
 
@@ -28,6 +10,17 @@ void AbstractCommandPrivate::setIcon(const QIcon &icon)
 
     Normally, you should not use this class directly, use its subclasses instead.
 */
+
+/*!
+    Creates an AbstractCommand with the given \a id and \a parent.
+*/
+AbstractCommand::AbstractCommand(const QByteArray &id, QObject *parent) :
+    QObject(parent),
+    d_ptr(new AbstractCommandPrivate(this))
+{
+    Q_D(AbstractCommand);
+    d->id = id;
+}
 
 /*!
     \internal
@@ -40,6 +33,9 @@ AbstractCommand::AbstractCommand(AbstractCommandPrivate &dd, const QByteArray &i
     d->id = id;
 }
 
+/*!
+    \brief Destroys AbstractCommand.
+*/
 AbstractCommand::~AbstractCommand()
 {
     delete d_ptr;
@@ -61,8 +57,7 @@ QByteArray AbstractCommand::id() const
 
     \brief Default command's text
 
-    Text is displayed in command settings and in menus unless
-    Command::AttributeUpdateText is specified.
+    Text is displayed in command settings and in menus.
 */
 QString AbstractCommand::text() const
 {
@@ -73,13 +68,14 @@ QString AbstractCommand::text() const
 void AbstractCommand::setText(const QString &text)
 {
     Q_D(AbstractCommand);
-    d->setText(text);
-}
 
-void AbstractCommand::setIcon(const QIcon &icon)
-{
-    Q_D(AbstractCommand);
-    d->setIcon(icon);
+    if (d->text == text)
+        return;
+
+    d->text = text;
+    d->onTextChanged(text);
+
+    emit changed();
 }
 
 /*!
@@ -87,8 +83,7 @@ void AbstractCommand::setIcon(const QIcon &icon)
 
     \brief Default command's icon
 
-    Icon is displayed in command settings and in menus unless
-    Command::AttributeUpdateIcon is specified.
+    Icon is displayed in command settings and in menus.
 */
 QIcon AbstractCommand::icon() const
 {
@@ -96,3 +91,11 @@ QIcon AbstractCommand::icon() const
     return d->icon;
 }
 
+void AbstractCommand::setIcon(const QIcon &icon)
+{
+    Q_D(AbstractCommand);
+
+    d->icon = icon;
+    d->onIconChanged(icon);
+    emit changed();
+}

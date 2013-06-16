@@ -2,6 +2,7 @@
 #include "standardcommands_p.h"
 
 #include <QtCore/QCoreApplication>
+#include <QtCore/QDebug>
 #include <QtCore/QMetaEnum>
 #include <QtCore/QtAlgorithms>
 
@@ -12,7 +13,8 @@
 #endif
 
 #include "actionmanager.h"
-#include "command.h"
+#include "applicationcommand.h"
+#include "contextcommand.h"
 
 namespace Parts {
 namespace StandardCommands {
@@ -84,7 +86,7 @@ using namespace Parts;
 
 StandardCommandsPrivate::StandardCommandsPrivate()
 {
-    qFill(commands, &commands[StandardCommands::StandardCommandCount], (Command*)0);
+    qFill(commands, &commands[StandardCommands::StandardCommandCount], (ContextCommand*)0);
 }
 
 Q_GLOBAL_STATIC(StandardCommandsPrivate, staticInstance)
@@ -93,30 +95,21 @@ StandardCommandsPrivate * StandardCommandsPrivate::instance()
     return staticInstance();
 }
 
-Command * StandardCommandsPrivate::createCommand(StandardCommands::StandardCommand command)
+Command * StandardCommandsPrivate::createCommand(StandardCommands::StandardCommand command, bool context)
 {
     QByteArray name = commandId(command);
-    Command *c = new Command(name, ActionManager::instance());
+    Command *c;
+    if (context)
+        c = new ContextCommand(name, ActionManager::instance());
+    else
+        c = new ApplicationCommand(name, ActionManager::instance());
 
     c->setDefaultShortcut(commandShortcut(command));
     c->setIcon(commandIcon(command));
-
-    switch (command) {
-    case StandardCommands::Quit:
-        c->commandAction()->setMenuRole(QAction::QuitRole);
-        break;
-    case StandardCommands::Preferences:
-        c->commandAction()->setMenuRole(QAction::PreferencesRole);
-        break;
-    case StandardCommands::About:
-        c->commandAction()->setMenuRole(QAction::AboutRole);
-        break;
-    case StandardCommands::AboutQt:
-        c->commandAction()->setMenuRole(QAction::AboutQtRole);
-        break;
-    default:
-        break;
-    }
+    if (context)
+        initAction(command, qobject_cast<ContextCommand *>(c)->commandAction());
+    else
+        initAction(command, const_cast<QAction *>(qobject_cast<ApplicationCommand *>(c)->action()));
 
     return c;
 }
@@ -186,7 +179,28 @@ QIcon StandardCommandsPrivate::commandIcon(StandardCommands::StandardCommand com
                             QIcon(QString(":/guisystem/icons/%1").arg(iconName)));
 }
 
-Command * StandardCommands::standardCommand(StandardCommands::StandardCommand command)
+void StandardCommandsPrivate::initAction(StandardCommands::StandardCommand command, QAction *action)
+{
+    switch (command) {
+    case StandardCommands::Quit:
+        action->setMenuRole(QAction::QuitRole);
+        break;
+    case StandardCommands::Preferences:
+        action->setMenuRole(QAction::PreferencesRole);
+        break;
+    case StandardCommands::About:
+        action->setMenuRole(QAction::AboutRole);
+        break;
+    case StandardCommands::AboutQt:
+        action->setMenuRole(QAction::AboutQtRole);
+        break;
+    default:
+        action->setMenuRole(QAction::NoRole);
+        break;
+    }
+}
+
+Command * StandardCommands::standardCommand(StandardCommands::StandardCommand command, bool context)
 {
     StandardCommandsPrivate *d = StandardCommandsPrivate::instance();
     if (command <= StandardCommands::NoCommand || command >= StandardCommands::StandardCommandCount)
@@ -194,12 +208,40 @@ Command * StandardCommands::standardCommand(StandardCommands::StandardCommand co
     if (d->commands[command] == 0) {
         QMutexLocker l(&d->mutex);
         if (d->commands[command] == 0) {
-            Command *c = StandardCommandsPrivate::createCommand(command);
+            Command *c = StandardCommandsPrivate::createCommand(command, context);
             StandardCommandsPrivate::retranslateCommand(c, command);
             d->commands[command] = c;
         }
     }
     return d->commands[command];
+}
+
+ApplicationCommand * StandardCommands::applicationCommand(StandardCommand command)
+{
+    Command *c = standardCommand(command, false);
+    if (!c)
+        return 0;
+
+    ApplicationCommand *result = qobject_cast<ApplicationCommand *>(c);
+    if (!result)
+        qWarning() << "StandardCommands::applicationCommand"
+                   << "Command for id" << StandardCommandsPrivate::commandId(command)
+                   << "is already registered with another type" << result->metaObject()->className();
+    return result;
+}
+
+ContextCommand * StandardCommands::contextCommand(StandardCommand command)
+{
+    Command *c = standardCommand(command, true);
+    if (!c)
+        return 0;
+
+    ContextCommand *result = qobject_cast<ContextCommand *>(c);
+    if (!result)
+        qWarning() << "StandardCommands::contextCommand"
+                   << "Command for id" << StandardCommandsPrivate::commandId(command)
+                   << "is already registered with another type" << result->metaObject()->className();
+    return result;
 }
 
 void StandardCommands::retranslateCommands()
