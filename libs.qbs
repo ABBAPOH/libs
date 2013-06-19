@@ -16,6 +16,7 @@ Project {
 
     references: [
         "src/3rdparty/qtsingleapplication/qtsingleapplication.qbs",
+        "src/bookmarks/bookmarks.qbs",
         "src/extensionsystem/extensionsystem.qbs",
         "src/filemanager/filemanager.qbs",
         "src/imageviewer/imageviewer.qbs",
