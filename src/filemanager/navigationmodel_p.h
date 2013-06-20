@@ -99,7 +99,7 @@ class NavigationModelPrivate : public QObject
     NavigationModel *q_ptr;
 
 public:
-    NavigationModelPrivate(NavigationModel *qq);
+    NavigationModelPrivate(NavigationModel *qq) : q_ptr(qq) {}
 
     NavigationModelItem *rootItem;
     NavigationModelItem *drivesItem;

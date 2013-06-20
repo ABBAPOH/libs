@@ -25,10 +25,27 @@
 
 using namespace FileManager;
 
-// todo: refactor model
-NavigationModelPrivate::NavigationModelPrivate(NavigationModel *qq) :
-    q_ptr(qq)
+static QString locationToString(NavigationModel::StandardLocations locations)
 {
+    switch (locations) {
+    case NavigationModel::DesktopLocation :
+        return QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
+    case NavigationModel::DocumentsLocation :
+        return QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    case NavigationModel::MusicLocation :
+        return QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
+    case NavigationModel::MoviesLocation :
+        return QStandardPaths::writableLocation(QStandardPaths::MoviesLocation);
+    case NavigationModel::PicturesLocation :
+        return QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
+    case NavigationModel::HomeLocation :
+        return QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+    case NavigationModel::ApplicationsLocation :
+        return QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation);
+    case NavigationModel::DownloadsLocation :
+        return QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+    default: return QString();
+    }
 }
 
 void NavigationModelPrivate::insertItem(NavigationModelItem *parentItem, const QString &name, const QString &path)
@@ -101,30 +118,6 @@ void NavigationModelPrivate::onDriveAdded(const QString &path)
 void NavigationModelPrivate::onDriveRemoved(const QString &path)
 {
     removeItem(path);
-}
-
-//#if QT_VERSION >= 0x050000
-static QString locationToString(NavigationModel::StandardLocations locations)
-{
-    switch (locations) {
-    case NavigationModel::DesktopLocation :
-        return QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
-    case NavigationModel::DocumentsLocation :
-        return QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
-    case NavigationModel::MusicLocation :
-        return QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
-    case NavigationModel::MoviesLocation :
-        return QStandardPaths::writableLocation(QStandardPaths::MoviesLocation);
-    case NavigationModel::PicturesLocation :
-        return QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
-    case NavigationModel::HomeLocation :
-        return QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
-    case NavigationModel::ApplicationsLocation :
-        return QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation);
-    case NavigationModel::DownloadsLocation :
-        return QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
-    default: return QString();
-    }
 }
 
 NavigationModel::StandardLocation pathToLocation(const QString &path)
