@@ -154,7 +154,8 @@ void ModelContainer::onRowsInserted(const QModelIndex &parent, int first, int la
     if (d->rootIndex != parent)
         return;
 
-    AbstractCommand *before = d->commands.count() > last ? d->commands.at(last) : 0;
+    int offset = d->commands.indexOf(d->firstSeparator) + 1;
+    AbstractCommand *before = d->commands.count() > last + offset ? d->commands.at(last + offset) : 0;
     for (int row = first; row <= last; ++row) {
         QModelIndex index = d->model->index(row, d->column, parent);
         d->addCommand(index, before);
@@ -171,7 +172,8 @@ void ModelContainer::onRowsRemoved(const QModelIndex &parent, int first, int las
     if (d->rootIndex != parent)
         return;
 
-    QList<AbstractCommand *> toRemove = d->commands.mid(first, last - first);
+    int offset = d->commands.indexOf(d->firstSeparator) + 1;
+    QList<AbstractCommand *> toRemove = d->commands.mid(offset + first, last - first);
     foreach (AbstractCommand *cmd, toRemove) {
         removeCommand(cmd);
     }
@@ -185,7 +187,8 @@ void ModelContainer::onCommandTriggered()
     Q_D(ModelContainer);
 
     ApplicationCommand *cmd = qobject_cast<ApplicationCommand *>(sender());
-    int row = d->commands.indexOf(cmd);
+    int offset = d->commands.indexOf(d->firstSeparator) + 1;
+    int row = d->commands.indexOf(cmd) - offset;
     QModelIndex index = d->model->index(row, d->column, d->rootIndex);
     emit triggered(index);
 }

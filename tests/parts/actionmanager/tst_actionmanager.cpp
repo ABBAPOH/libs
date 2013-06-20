@@ -109,9 +109,9 @@ void ActionManagerTest::testModelCommand()
 
     container.setModel(&model);
 
-    QVERIFY(container.commands().count() == 10);
+    QVERIFY(container.commands().count() == 11);
     for (int i = 0; i < 10; ++i) {
-        QCOMPARE(container.commands().at(i)->text(), QString("row %1").arg(i));
+        QCOMPARE(container.commands().at(i+1)->text(), QString("row %1").arg(i));
     }
 
     for (int i = 0; i < 4; ++i) {
@@ -128,7 +128,7 @@ void ActionManagerTest::testModelCommand()
     }
 
     for (int i = 0; i < 4; ++i) {
-        QCOMPARE(container.commands().at(5 + i)->text(), QString("new row %1").arg(i));
+        QCOMPARE(container.commands().at(5 + i + 1)->text(), QString("new row %1").arg(i));
     }
 }
 
