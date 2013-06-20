@@ -1,1 +1,1 @@
-#include "../src/filemanager/filethumbnails.h"
+#include "../src/filemanager/core/filethumbnails.h"

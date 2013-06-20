@@ -1,1 +1,1 @@
-#include "../src/filemanager/navigationpanelsettings.h"
+#include "../src/filemanager/core/navigationpanelsettings.h"

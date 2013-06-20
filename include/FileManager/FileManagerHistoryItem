@@ -1,1 +1,1 @@
-#include "../src/filemanager/filemanagerhistoryitem.h"
+#include "../src/filemanager/core/filemanagerhistoryitem.h"

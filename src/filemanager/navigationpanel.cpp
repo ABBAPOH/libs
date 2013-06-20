@@ -1,10 +1,6 @@
 #include "navigationpanel.h"
 #include "navigationpanel_p.h"
 
-#include "navigationmodel.h"
-
-#include <IO/QDriveController>
-
 #include <QtGui/QResizeEvent>
 
 #if QT_VERSION >= 0x050000
@@ -18,6 +14,8 @@
 #include <QtGui/QTreeView>
 #include <QtGui/QHeaderView>
 #endif
+
+#include <IO/QDriveController>
 
 static const int BORDER = 4;
 

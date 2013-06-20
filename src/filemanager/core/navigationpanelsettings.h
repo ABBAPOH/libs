@@ -1,9 +1,9 @@
 #ifndef NAVIGATIONPANELSETTINGS_H
 #define NAVIGATIONPANELSETTINGS_H
 
-#include "filemanager_global.h"
+#include "../filemanager_global.h"
 
-#include "navigationmodel.h"
+#include <FileManager/NavigationModel>
 
 namespace FileManager {
 

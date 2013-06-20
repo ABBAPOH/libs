@@ -30,12 +30,11 @@
 #include <IO/QDriveInfo>
 #include <IO/QFileCopier>
 
+#include "fileinfodialog.h"
+#include "fileitemdelegate.h"
 #include "filemanagerconstants.h"
 #include "filemanagerhistory_p.h"
 #include "filemanagerhistoryitem_p.h"
-#include "filemanagersettings.h"
-#include "fileinfodialog.h"
-#include "fileitemdelegate.h"
 #include "filemanagersettings.h"
 #include "filemanagersettings_p.h"
 #include "openwithmenu.h"

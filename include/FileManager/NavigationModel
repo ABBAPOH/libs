@@ -1,1 +1,1 @@
-#include "../src/filemanager/navigationmodel.h"
+#include "../src/filemanager/core/navigationmodel.h"

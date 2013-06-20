@@ -1,7 +1,7 @@
 #ifndef FILESYSTEMMODEL_H
 #define FILESYSTEMMODEL_H
 
-#include "filemanager_global.h"
+#include "../filemanager_global.h"
 
 #include <QFileSystemModel>
 

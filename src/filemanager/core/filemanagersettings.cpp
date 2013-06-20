@@ -1,9 +1,6 @@
 #include "filemanagersettings.h"
 #include "filemanagersettings_p.h"
 
-#include "filemanagerwidget.h"
-#include "filemanagerwidget_p.h"
-
 using namespace FileManager;
 
 FileManagerSettings::FileManagerSettings() :
@@ -13,6 +10,11 @@ FileManagerSettings::FileManagerSettings() :
 
     d->warnOnFileRemove = true;
     d->warnOnExtensionChange = true;
+}
+
+FileManagerSettings::~FileManagerSettings()
+{
+    delete d_ptr;
 }
 
 FileManagerSettings *FileManagerSettings::globalSettings()

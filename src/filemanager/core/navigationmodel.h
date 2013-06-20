@@ -1,7 +1,7 @@
 #ifndef NAVIGATIONMODEL_H
 #define NAVIGATIONMODEL_H
 
-#include "filemanager_global.h"
+#include "../filemanager_global.h"
 
 #include <QtCore/QAbstractItemModel>
 

@@ -1,1 +1,1 @@
-#include "../src/filemanager/filesystemmanager.h"
+#include "../src/filemanager/core/filesystemmanager.h"

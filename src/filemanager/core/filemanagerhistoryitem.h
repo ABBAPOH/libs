@@ -1,7 +1,7 @@
 #ifndef FILEMANAGERHISTORYITEM_H
 #define FILEMANAGERHISTORYITEM_H
 
-#include "filemanager_global.h"
+#include "../filemanager_global.h"
 
 #include <QtCore/QSharedDataPointer>
 #include <QtCore/QDateTime>

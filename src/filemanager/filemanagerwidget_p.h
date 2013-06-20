@@ -35,8 +35,8 @@
 #include <QtGui/QUndoStack>
 #endif
 
-#include "filesystemmanager.h"
-#include "filesystemmodel.h"
+#include <FileManager/FileSystemManager>
+#include <FileManager/FileSystemModel>
 
 namespace FileManager {
 

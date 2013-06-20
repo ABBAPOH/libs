@@ -1,11 +1,11 @@
 #ifndef FILEMANAGERHISTORY_H
 #define FILEMANAGERHISTORY_H
 
-#include "filemanager_global.h"
+#include "../filemanager_global.h"
 
 #include <QtCore/QObject>
 
-#include "filemanagerhistoryitem.h"
+#include  <FileManager/FileManagerHistoryItem>
 
 namespace FileManager {
 

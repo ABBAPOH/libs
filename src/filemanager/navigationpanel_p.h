@@ -1,8 +1,6 @@
 #ifndef NAVIGATIONPANEL_P_H
 #define NAVIGATIONPANEL_P_H
 
-#include "navigationmodel.h"
-
 #include <QtCore/QEvent>
 #include <QtCore/QRect>
 
@@ -25,6 +23,8 @@
 
 #include <IO/QDriveController>
 #include <IO/QDriveInfo>
+
+#include <FileManager/NavigationModel>
 
 #define bublic public
 

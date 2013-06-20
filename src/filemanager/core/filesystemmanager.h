@@ -1,7 +1,7 @@
 #ifndef FILESYSTEMMANAGER_H
 #define FILESYSTEMMANAGER_H
 
-#include "filemanager_global.h"
+#include "../filemanager_global.h"
 
 #include <QtCore/QObject>
 #include <QtCore/QStringList>

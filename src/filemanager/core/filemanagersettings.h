@@ -1,7 +1,7 @@
 #ifndef FILEMANAGERSETTINGS_H
 #define FILEMANAGERSETTINGS_H
 
-#include "filemanager_global.h"
+#include "../filemanager_global.h"
 
 #include <QtCore/QSize>
 
@@ -23,6 +23,7 @@ public:
 
 protected:
     FileManagerSettings();
+    ~FileManagerSettings();
 
     FileManagerSettingsPrivate *d_ptr;
 
