@@ -125,7 +125,10 @@ QString QStandardPaths::writableLocation(StandardLocation type)
             result = convertCharArray(path);
         break;
 
-    case DownloadLocation: // TODO implement with SHGetKnownFolderPath(FOLDERID_Downloads) (starting from Vista)
+    case DownloadLocation:
+        // TODO implement with SHGetKnownFolderPath(FOLDERID_Downloads) (starting from Vista)
+        result = QDir::homePath() + "/Downloads";
+        break;
     case DocumentsLocation:
         if (SHGetSpecialFolderPath(0, path, CSIDL_PERSONAL, FALSE))
             result = convertCharArray(path);

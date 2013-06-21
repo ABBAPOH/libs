@@ -161,6 +161,8 @@ QString QStandardPaths::writableLocation(StandardLocation type)
         return QDir::homePath();
     case TempLocation:
         return QDir::tempPath();
+    case DownloadLocation:
+        return QDir::homePath() + "/Downloads";
     case GenericDataLocation:
     case DataLocation:
     case GenericCacheLocation:

@@ -42,8 +42,7 @@ static QString locationToString(NavigationModel::StandardLocations locations)
     case NavigationModel::ApplicationsLocation :
         return QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation);
     case NavigationModel::DownloadsLocation :
-        return QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/Downloads";
-//        return QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+        return QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
     default: return QString();
     }
 }
