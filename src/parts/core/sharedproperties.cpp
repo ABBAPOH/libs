@@ -101,7 +101,13 @@ void SharedPropertiesPrivate::notifyValueChanged(const QString &key, const QVari
     foreach (const Property &prop, mapKeyToProperty.values(key)) {
         const QMetaObject *metaObject = prop.object->metaObject();
         QMetaProperty property = metaObject->property(prop.id);
-        property.write(prop.object, value);
+
+        // this hack is required for Linux because QSettings
+        // restores integers as strings.
+        QVariant trueValue = value;
+        trueValue.convert(property.type());
+
+        property.write(prop.object, trueValue);
     }
 }
 
