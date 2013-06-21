@@ -517,7 +517,7 @@ static void readXmlPluginSpec(PluginSpecPrivate *d, QXmlStreamReader &reader)
             return;
 
         default:
-            qDebug() << reader.tokenString();
+            qWarning() << "Unexpected token" << reader.tokenString();
             reader.raiseError(QObject::tr("Unexpected token"));
             break;
         }

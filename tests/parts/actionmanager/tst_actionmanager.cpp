@@ -119,14 +119,6 @@ void ActionManagerTest::testModelCommand()
         model.insertRow(5+i, item);
     }
 
-    for (int i = 0; i < model.rowCount(); ++i) {
-        qDebug() << model.index(i, 0).data();
-    }
-
-    for (int i = 0; i < container.commands().count(); ++i) {
-        qDebug() << container.commands().at(i)->text();
-    }
-
     for (int i = 0; i < 4; ++i) {
         QCOMPARE(container.commands().at(5 + i + 1)->text(), QString("new row %1").arg(i));
     }

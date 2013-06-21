@@ -119,7 +119,6 @@ void ToolBar::populate()
     Q_ASSERT(m_container);
     foreach (AbstractCommand *command, m_container->commands()) {
         QAction *action = command->createAction(this);
-        qDebug() << action->text();
         m_mapToAction.insert(command, action);
         addAction(action);
     }

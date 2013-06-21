@@ -422,8 +422,6 @@ QList<PluginSpec*> PluginManagerPrivate::loadSpecs(QStringList specFiles)
 
 void PluginManagerPrivate::fileChanged(const QString &specPath)
 {
-    qDebug() << "PluginManagerPrivate::fileChanged" << specPath;
-
     QFileInfo info(specPath);
 
     if (!info.exists()) {
