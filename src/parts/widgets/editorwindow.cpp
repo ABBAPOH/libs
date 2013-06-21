@@ -69,7 +69,7 @@ EditorWindow::EditorWindow(QWidget *parent) :
 //    d->menuBarButton->setMenu(ActionManager::instance()->container("MenuBar")->menu(d->menuBarButton));
     d->menuBarButton->setPopupMode(QToolButton::InstantPopup);
     d->menuBarButton->setText(tr("Menu"));
-    d->menuBarButton->setIcon(QIcon(":/guisystem/icons/menu.png"));
+    d->menuBarButton->setIcon(QIcon(":/parts/icons/menu.png"));
 #endif
 
     QSettings settings;

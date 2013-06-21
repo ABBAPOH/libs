@@ -176,7 +176,7 @@ QIcon StandardCommandsPrivate::commandIcon(StandardCommands::StandardCommand com
     Q_ASSERT(info.id == command);
     const QString iconName = QLatin1String(info.iconName);
     return QIcon::fromTheme(iconName,
-                            QIcon(QString(":/guisystem/icons/%1").arg(iconName)));
+                            QIcon(QString(":/parts/icons/%1").arg(iconName)));
 }
 
 void StandardCommandsPrivate::initAction(StandardCommands::StandardCommand command, QAction *action)
