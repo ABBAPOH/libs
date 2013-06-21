@@ -7,6 +7,7 @@ using namespace Bookmarks;
 BookmarksMenu::BookmarksMenu(QWidget *parent) :
     ModelMenu(parent)
 {
+    setTitle(tr("Bookmarks"));
     connect(this, SIGNAL(activated(const QModelIndex &)),
             this, SLOT(activated(const QModelIndex &)));
     setStatusBarTextRole(BookmarksModel::UrlRole);
