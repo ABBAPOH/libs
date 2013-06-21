@@ -31,8 +31,6 @@ Library {
         "core/navigationmodel.cpp",
         "core/navigationmodel.h",
         "core/navigationmodel_p.h",
-        "core/navigationpanelsettings.cpp",
-        "core/navigationpanelsettings.h",
         "filecopydialog.cpp",
         "filecopydialog.h",
         "filecopydialog_p.h",

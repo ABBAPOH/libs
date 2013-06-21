@@ -21,7 +21,6 @@
 #include <IO/QDriveController>
 
 #include "filesystemmodel.h"
-#include "navigationpanelsettings.h"
 
 using namespace FileManager;
 
@@ -43,7 +42,8 @@ static QString locationToString(NavigationModel::StandardLocations locations)
     case NavigationModel::ApplicationsLocation :
         return QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation);
     case NavigationModel::DownloadsLocation :
-        return QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+        return QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/Downloads";
+//        return QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
     default: return QString();
     }
 }
@@ -177,17 +177,6 @@ NavigationModel::NavigationModel(QObject *parent) :
             item->driveInfo = info;
         }
     }
-
-    NavigationPanelSettings *panelSettings = NavigationPanelSettings::globalSettings();
-    panelSettings->globalSettings()->addModel(this);
-    QSettings settings("NavigationModel");
-    if (settings.contains("folders")) {
-        QStringList folders = settings.value("folders").toStringList();
-        foreach (const QString &folder, folders)
-            addFolder(folder);
-    } else {
-        setStandardLocations(panelSettings->standardLocations());
-    }
 }
 
 /*!
@@ -197,18 +186,7 @@ NavigationModel::~NavigationModel()
 {
     Q_D(NavigationModel);
 
-    NavigationPanelSettings *panelSettings = NavigationPanelSettings::globalSettings();
-    panelSettings->globalSettings()->removeModel(this);
-
-    QSettings settings("NavigationModel");
-    QStringList folders;
-    foreach (NavigationModelItem *item, d->foldersItem->m_children) {
-        folders.append(item->path);
-    }
-    settings.setValue("folders", folders);
-
     delete d->rootItem;
-
     delete d_ptr;
 }
 
@@ -560,7 +538,6 @@ void NavigationModel::setStandardLocations(StandardLocations locations)
     d->locations = locations;
 
     for (int i = DesktopLocation; i <= StandardLocationCount; i = (i << 1)) {
-//        setStandardLocation((StandardLocation)i, (locations & i));
         StandardLocation loc = (StandardLocation)i;
         bool on = (locations & i);
         QString path = locationToString(loc);
