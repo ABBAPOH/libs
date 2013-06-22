@@ -203,7 +203,7 @@ void FileManagerHistory::setMaximumItemCount(int count)
 
 QDataStream & operator<<(QDataStream & stream, const FileManagerHistoryItem &item)
 {
-    stream << item.path();
+    stream << item.url();
     stream << item.title();
     stream << item.lastVisited();
     stream << item.icon();
@@ -215,7 +215,7 @@ QDataStream & operator>>(QDataStream & stream, FileManagerHistoryItem &item)
 {
     FileManagerHistoryItemData data;
 
-    stream >> data.path;
+    stream >> data.url;
     stream >> data.title;
     stream >> data.lastVisited;
     stream >> data.icon;

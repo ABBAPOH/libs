@@ -50,6 +50,7 @@ void FileSystemModel::setFileSystemManager(FileSystemManager *manager)
         delete m_manager;
 
     m_manager = manager;
+    emit fileSystemManagerChanged();
 }
 
 QVariant FileSystemModel::headerData(int section, Qt::Orientation orientation, int role) const

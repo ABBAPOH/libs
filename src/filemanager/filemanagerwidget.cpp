@@ -59,32 +59,19 @@ void FileManagerWidgetPrivate::init()
     retranslateUi();
 
     blockKeyEvent = false;
-    model = 0;
     currentView = 0;
     viewMode = (FileManagerWidget::ViewMode)-1; // to skip if in setView()
     fileSystemManager = 0;
-    sortingColumn = (FileManagerWidget::Column)-1;
-    sortingOrder = (Qt::SortOrder)-1;
     itemsExpandable = true;
     alternatingRowColors = true;
     showHiddenFiles = false;
-
-    history = new FileManagerHistory(this);
-    connect(history, SIGNAL(currentItemIndexChanged(int)),
-            this, SLOT(onCurrentItemIndexChanged(int)));
-
-    FileSystemModel *model = new FileSystemModel(this);
-#ifdef Q_OS_UNIX
-    model->setRootPath("/");
-#else
-    model->setRootPath("");
-#endif
-    model->setFilter(mBaseFilters);
-    model->setReadOnly(false);
-    setModel(model);
-    setFileSystemManager(FileSystemManager::instance());
+    model = 0;
 
     q->setViewMode(FileManagerWidget::IconView);
+    q->setModel(0);
+
+    setFileSystemManager(FileSystemManager::instance());
+
     q->setFlow(FileManagerWidget::LeftToRight);
 #ifdef Q_OS_MAC
     q->setIconSize(FileManagerWidget::IconView, QSize(64, 64));
@@ -96,7 +83,6 @@ void FileManagerWidgetPrivate::init()
     q->setIconSize(FileManagerWidget::ColumnView, QSize(16, 16));
     q->setIconSize(FileManagerWidget::TreeView, QSize(16, 16));
     q->setItemsExpandable(true);
-    q->setSorting(FileManagerWidget::NameColumn, Qt::AscendingOrder);
 }
 
 void FileManagerWidgetPrivate::setupUi()
@@ -147,13 +133,11 @@ void FileManagerWidgetPrivate::createActions()
     actions[FileManagerWidget::Redo]->setEnabled(false);
     actions[FileManagerWidget::Redo]->setObjectName(Constants::Actions::Redo);
     connect(actions[FileManagerWidget::Redo], SIGNAL(triggered()), q, SLOT(redo()));
-    connect(q, SIGNAL(canRedoChanged(bool)), actions[FileManagerWidget::Redo], SLOT(setEnabled(bool)));
 
     actions[FileManagerWidget::Undo] = new QAction(this);
     actions[FileManagerWidget::Undo]->setEnabled(false);
     actions[FileManagerWidget::Undo]->setObjectName(Constants::Actions::Undo);
     connect(actions[FileManagerWidget::Undo], SIGNAL(triggered()), q, SLOT(undo()));
-    connect(q, SIGNAL(canUndoChanged(bool)), actions[FileManagerWidget::Undo], SLOT(setEnabled(bool)));
 
     actions[FileManagerWidget::Cut] = new QAction(this);
     actions[FileManagerWidget::Cut]->setEnabled(false);
@@ -179,7 +163,6 @@ void FileManagerWidgetPrivate::createActions()
     actions[FileManagerWidget::ShowHiddenFiles] = new QAction(this);
     actions[FileManagerWidget::ShowHiddenFiles]->setCheckable(true);
     actions[FileManagerWidget::ShowHiddenFiles]->setObjectName(Constants::Actions::ShowHiddenFiles);
-    connect(actions[FileManagerWidget::ShowHiddenFiles], SIGNAL(triggered(bool)), q, SLOT(setShowHiddenFiles(bool)));
 
     viewModeGroup = new QActionGroup(this);
 
@@ -220,10 +203,10 @@ void FileManagerWidgetPrivate::createActions()
 
     actions[FileManagerWidget::SortByName]->setChecked(true);
 
-    actions[FileManagerWidget::SortByName]->setData(FileManagerWidget::NameColumn);
-    actions[FileManagerWidget::SortBySize]->setData(FileManagerWidget::SizeColumn);
-    actions[FileManagerWidget::SortByType]->setData(FileManagerWidget::TypeColumn);
-    actions[FileManagerWidget::SortByDate]->setData(FileManagerWidget::DateColumn);
+    actions[FileManagerWidget::SortByName]->setData(FileManagerModel::NameColumn);
+    actions[FileManagerWidget::SortBySize]->setData(FileManagerModel::SizeColumn);
+    actions[FileManagerWidget::SortByType]->setData(FileManagerModel::TypeColumn);
+    actions[FileManagerWidget::SortByDate]->setData(FileManagerModel::DateColumn);
 
     actions[FileManagerWidget::SortByName]->setObjectName(Constants::Actions::SortByName);
     actions[FileManagerWidget::SortBySize]->setObjectName(Constants::Actions::SortBySize);
@@ -286,73 +269,76 @@ public:
     }
 };
 
+void FileManagerWidgetPrivate::connectModel(FileManagerModel *model)
+{
+    Q_ASSERT(model);
+
+    actions[FileManagerWidget::ShowHiddenFiles]->setChecked(model->showHiddenFiles());
+    connect(actions[FileManagerWidget::ShowHiddenFiles], SIGNAL(triggered(bool)),
+            model, SLOT(setShowHiddenFiles(bool)));
+    connect(model, SIGNAL(showHiddenFilesChanged(bool)),
+            actions[FileManagerWidget::ShowHiddenFiles], SLOT(setChecked(bool)));
+
+    connect(model, SIGNAL(urlChanged(QUrl)), this, SLOT(onUrlChanged(QUrl)));
+    connect(model, SIGNAL(sortingChanged(int,Qt::SortOrder)),
+            this, SLOT(onSortingChanged(int,Qt::SortOrder)));
+    connect(model->itemModel(), SIGNAL(fileSystemManagerChanged()),
+            this, SLOT(onFileSystemManagerChanged()));
+}
+
+void FileManagerWidgetPrivate::disconnectModel(FileManagerModel *model)
+{
+    Q_ASSERT(model);
+
+    disconnect(currentView->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
+               this, SLOT(onSelectionChanged()));
+
+    disconnect(actions[FileManagerWidget::ShowHiddenFiles], SIGNAL(triggered(bool)),
+            model, SLOT(setShowHiddenFiles(bool)));
+    disconnect(model, SIGNAL(showHiddenFilesChanged(bool)),
+            actions[FileManagerWidget::ShowHiddenFiles], SLOT(setChecked(bool)));
+
+    disconnect(model, SIGNAL(urlChanged(QUrl)), this, SLOT(onUrlChanged(QUrl)));
+    disconnect(model, SIGNAL(sortingChanged(int,Qt::SortOrder)),
+               this, SLOT(onSortingChanged(int,Qt::SortOrder)));
+
+    disconnect(model->itemModel(), SIGNAL(fileSystemManagerChanged()),
+            this, SLOT(onFileSystemManagerChanged()));
+}
+
 void FileManagerWidgetPrivate::setFileSystemManager(FileSystemManager *manager)
 {
-    Q_Q(FileManagerWidget);
-
     if (fileSystemManager) {
-        disconnect(fileSystemManager, 0, q, 0);
+        disconnect(fileSystemManager, SIGNAL(canRedoChanged(bool)),
+                actions[FileManagerWidget::Redo], SLOT(setEnabled(bool)));
+        disconnect(fileSystemManager, SIGNAL(canUndoChanged(bool)),
+                actions[FileManagerWidget::Undo], SLOT(setEnabled(bool)));
     }
 
     fileSystemManager = manager;
-    connect(fileSystemManager, SIGNAL(canUndoChanged(bool)),
-            q, SIGNAL(canUndoChanged(bool)));
+
+    actions[FileManagerWidget::Redo]->setEnabled(fileSystemManager->canRedo());
+    actions[FileManagerWidget::Undo]->setEnabled(fileSystemManager->canUndo());
     connect(fileSystemManager, SIGNAL(canRedoChanged(bool)),
-            q, SIGNAL(canRedoChanged(bool)));
-}
-
-void FileManagerWidgetPrivate::setModel(FileSystemModel *m)
-{
-    Q_Q(FileManagerWidget);
-
-    if (m == 0)
-        setModel(new FileSystemModel(this));
-
-    if (model == m)
-        return;
-
-    if (model) {
-        if (currentView)
-            disconnect(currentView->selectionModel(), 0, q, 0);
-    }
-
-    if (model && model->QObject::parent() == this)
-        delete model;
-
-    model = m;
-
-    if (currentView) {
-        currentView->setModel(model);
-        QTreeView *view = qobject_cast<QTreeView *>(currentView);
-        if (view) {
-            view->setColumnWidth(0, 250);
-            view->sortByColumn(sortingColumn, sortingOrder);
-        }
-        connect(currentView->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
-                q, SIGNAL(selectedPathsChanged()));
-    }
-    connect(q, SIGNAL(selectedPathsChanged()), SLOT(onSelectionChanged()));
+            actions[FileManagerWidget::Redo], SLOT(setEnabled(bool)));
+    connect(fileSystemManager, SIGNAL(canUndoChanged(bool)),
+            actions[FileManagerWidget::Undo], SLOT(setEnabled(bool)));
 }
 
 QModelIndexList FileManagerWidgetPrivate::selectedIndexes() const
 {
+    Q_ASSERT(currentView);
+    Q_ASSERT(currentView->selectionModel());
     if (viewMode == FileManagerWidget::ColumnView)
         return currentView->selectionModel()->selectedIndexes();
 
     return currentView->selectionModel()->selectedRows();
 }
 
-void FileManagerWidgetPrivate::updateSorting()
-{
-    QTreeView *view = qobject_cast<QTreeView*>(currentView);
-    if (view)
-        view->sortByColumn(sortingColumn, sortingOrder);
-
-    model->sort(sortingColumn, sortingOrder);
-}
-
 void FileManagerWidgetPrivate::paste(bool copy)
 {
+    Q_Q(FileManagerWidget);
+
     QClipboard * clipboard = QApplication::clipboard();
     const QMimeData * data = clipboard->mimeData();
     const QList<QUrl> & urls = data->urls();
@@ -362,10 +348,12 @@ void FileManagerWidgetPrivate::paste(bool copy)
         files.append(url.toLocalFile());
     }
 
+    Q_ASSERT(q->url().isLocalFile());
+    QString path = q->url().toLocalFile();
     if (copy)
-        fileSystemManager->copy(files, currentPath);
+        fileSystemManager->copy(files, path);
     else
-        fileSystemManager->move(files, currentPath);
+        fileSystemManager->move(files, path);
 }
 
 bool FileManagerWidgetPrivate::hasFiles(const QStringList &paths)
@@ -407,24 +395,18 @@ QAbstractItemView * FileManagerWidgetPrivate::createView(FileManagerWidget::View
     view->setEditTriggers(QAbstractItemView::SelectedClicked | QAbstractItemView::EditKeyPressed);
     view->setItemDelegate(new FileItemDelegate(view));
     view->setIconSize(iconSizes[mode]);
-    if (mode != FileManagerWidget::ColumnView)
+
+    if (mode != FileManagerWidget::ColumnView) {
         connect(view, SIGNAL(activated(QModelIndex)),
                 this, SLOT(onActivated(QModelIndex)),
                 Qt::QueuedConnection);
-    else
+    } else {
         connect(view, SIGNAL(doubleClicked(QModelIndex)),
                 this, SLOT(onActivated(QModelIndex)),
                 Qt::QueuedConnection);
-    if (model) {
-        view->setModel(model);
-        QTreeView *treeView = qobject_cast<QTreeView *>(view);
-        if (treeView) {
-            treeView->setColumnWidth(0, 250);
-            treeView->sortByColumn(sortingColumn, sortingOrder);
-        }
-        connect(view->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
-                q, SIGNAL(selectedPathsChanged()));
     }
+
+    setViewModel(view, model);
 
     return view;
 }
@@ -488,6 +470,34 @@ QAbstractItemView *FileManagerWidgetPrivate::testCurrentView(FileManagerWidget::
     return 0;
 }
 
+void FileManagerWidgetPrivate::setViewModel(QAbstractItemView *view, FileManagerModel *model)
+{
+    Q_Q(FileManagerWidget);
+
+    Q_ASSERT(view);
+
+    if (!model) {
+        view->setModel(0);
+        return;
+    }
+
+    FileSystemModel *itemModel = model->itemModel();
+    view->setModel(itemModel);
+
+    const QUrl url = q->url();
+    Q_ASSERT(url.isLocalFile());
+    QString path = url.toLocalFile();
+    QModelIndex index = itemModel->index(path);
+    view->setRootIndex(index);
+    QTreeView *treeView = qobject_cast<QTreeView *>(view);
+    if (treeView) {
+        treeView->setColumnWidth(0, 250);
+        treeView->sortByColumn(model->sortColumn(), model->sortOrder());
+    }
+    connect(view->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
+            this, SLOT(onSelectionChanged()));
+}
+
 void FileManagerWidgetPrivate::updateListViewFlow(QListView *view)
 {
     QSize s = gridSize;
@@ -507,43 +517,53 @@ void FileManagerWidgetPrivate::updateListViewFlow(QListView *view)
     view->setMouseTracking(true);
 }
 
+void FileManagerWidgetPrivate::onUrlChanged(const QUrl &url)
+{
+    Q_Q(FileManagerWidget);
+
+    Q_ASSERT(url.isLocalFile());
+    QString path = url.toLocalFile();
+
+    QModelIndex index = model->itemModel()->index(path);
+    currentView->selectionModel()->clear(); // to prevent bug with selecting dir we enter in
+    currentView->setRootIndex(index);
+
+    emit q->urlChanged(url);
+}
+
+void FileManagerWidgetPrivate::onSortingChanged(int column, Qt::SortOrder order)
+{
+    QTreeView *view = qobject_cast<QTreeView*>(currentView);
+    if (view)
+        view->sortByColumn(column, order);
+
+    for (int i = FileManagerModel::NameColumn; i < FileManagerModel::ColumnCount; i++) {
+        actions[FileManagerWidget::SortByName + i]->setChecked(column == FileManagerModel::NameColumn + i);
+    }
+
+    actions[FileManagerWidget::SortDescendingOrder]->setChecked(order == Qt::DescendingOrder);
+}
+
 void FileManagerWidgetPrivate::onActivated(const QModelIndex &index)
 {
     Q_Q(FileManagerWidget);
 
-    QString path = model->filePath(index);
+    QString path = model->itemModel()->filePath(index);
     if (path.isEmpty())
         return;
+    QUrl url = QUrl::fromLocalFile(path);
     Qt::KeyboardModifiers modifiers = qApp->keyboardModifiers();
-    emit q->openRequested(QStringList() << path, modifiers);
-}
-
-// Triggers when current item in history changes
-void FileManagerWidgetPrivate::onCurrentItemIndexChanged(int index)
-{
-    Q_Q(FileManagerWidget);
-
-    QString path = history->itemAt(index).path();
-    if (currentPath != path) {
-        currentPath = path;
-        QModelIndex modelIndex = model->index(path);
-        currentView->setRootIndex(modelIndex);
-
-        emit q->currentPathChanged(path);
-    }
+    emit q->openRequested(QList<QUrl>() << url, modifiers);
 }
 
 void FileManagerWidgetPrivate::onSortIndicatorChanged(int logicalIndex, Qt::SortOrder order)
 {
-    Q_Q(FileManagerWidget);
+    model->setSorting(FileManagerModel::Column(logicalIndex), order);
+}
 
-    if (sortingColumn == logicalIndex && sortingOrder == order)
-        return;
-
-    sortingColumn = (FileManagerWidget::Column)logicalIndex;
-    sortingOrder = order;
-
-    emit q->sortingChanged();
+void FileManagerWidgetPrivate::onFileSystemManagerChanged()
+{
+    setFileSystemManager(model->itemModel()->fileSystemManager());
 }
 
 void FileManagerWidgetPrivate::toggleViewMode(bool toggled)
@@ -559,28 +579,24 @@ void FileManagerWidgetPrivate::toggleViewMode(bool toggled)
 
 void FileManagerWidgetPrivate::toggleSortColumn(bool toggled)
 {
-    Q_Q(FileManagerWidget);
-
     if (toggled) {
         QAction *action = qobject_cast<QAction*>(sender());
         if (action)
-            q->setSortingColumn((FileManagerWidget::Column)action->data().toInt());
+            model->setSortColumn((FileManagerModel::Column)action->data().toInt());
     }
 }
 
 void FileManagerWidgetPrivate::toggleSortOrder(bool descending)
 {
-    Q_Q(FileManagerWidget);
-
-    q->setSortingOrder(descending ? Qt::DescendingOrder : Qt::AscendingOrder);
+    model->setSortOrder(descending ? Qt::DescendingOrder : Qt::AscendingOrder);
 }
 
 void FileManagerWidgetPrivate::onSelectionChanged()
 {
     Q_Q(FileManagerWidget);
 
-    QStringList paths = q->selectedPaths();
-    bool enabled = !paths.empty();
+    QList<QUrl> urls = q->selectedUrls();
+    bool enabled = !urls.empty();
 
     actions[FileManagerWidget::Open]->setEnabled(enabled);
     actions[FileManagerWidget::Rename]->setEnabled(enabled);
@@ -589,18 +605,23 @@ void FileManagerWidgetPrivate::onSelectionChanged()
 //    actions[FileManagerWidget::Cut]->setEnabled(enabled);
     actions[FileManagerWidget::Copy]->setEnabled(enabled);
 
-    if (!paths.isEmpty()) {
-        if (paths.size() == 1) {
-            actions[FileManagerWidget::Cut]->setText(tr("Cut \"%1\"").arg(QFileInfo(paths[0]).fileName()));
-            actions[FileManagerWidget::Copy]->setText(tr("Copy \"%1\"").arg(QFileInfo(paths[0]).fileName()));
+    if (!urls.isEmpty()) {
+        if (urls.size() == 1) {
+            QUrl url = urls.first();
+            Q_ASSERT(url.isLocalFile());
+            QFileInfo info(url.toLocalFile());
+            actions[FileManagerWidget::Cut]->setText(tr("Cut \"%1\"").arg(info.fileName()));
+            actions[FileManagerWidget::Copy]->setText(tr("Copy \"%1\"").arg(info.fileName()));
         } else {
-            actions[FileManagerWidget::Cut]->setText(tr("Cut %1 items").arg(paths.size()));
-            actions[FileManagerWidget::Copy]->setText(tr("Copy %1 items").arg(paths.size()));
+            actions[FileManagerWidget::Cut]->setText(tr("Cut %1 items").arg(urls.size()));
+            actions[FileManagerWidget::Copy]->setText(tr("Copy %1 items").arg(urls.size()));
         }
     } else {
         actions[FileManagerWidget::Cut]->setText(tr("Cut"));
         actions[FileManagerWidget::Copy]->setText(tr("Copy"));
     }
+
+    emit q->selectedPathsChanged();
 }
 
 /*!
@@ -791,64 +812,21 @@ void FileManagerWidget::setAlternatingRowColors(bool enable)
 }
 
 /*!
-    \property FileManagerWidget::canRedo
-    Holds wheter widget can redo next operation.
-*/
-bool FileManagerWidget::canRedo() const
-{
-    return fileSystemManager()->canRedo();
-}
-
-/*!
-    \fn void FileManagerWidget::canRedoChanged(bool canRedo)
-    This signal is emited when FileManagerWidget::canRedo property is changed.
-*/
-
-/*!
-    \property FileManagerWidget::canUndo
-    Holds wheter widget can redo previsous operation.
-*/
-bool FileManagerWidget::canUndo() const
-{
-    return fileSystemManager()->canUndo();
-}
-
-/*!
-    \fn void FileManagerWidget::canUndoChanged(bool canUndo)
-    This signal is emited when FileManagerWidget::canUndo property is changed.
-*/
-
-/*!
-    \property FileManagerWidget::currentPath
+    \property FileManagerWidget::url
     This property holds current folder displayed it the widget.
 */
-QString FileManagerWidget::currentPath() const
+QUrl FileManagerWidget::url() const
 {
     Q_D(const FileManagerWidget);
 
-    return d->currentPath;
+    return d->model->url();
 }
 
-void FileManagerWidget::setCurrentPath(const QString &path)
+void FileManagerWidget::setUrl(const QUrl &url)
 {
     Q_D(FileManagerWidget);
 
-    if (d->currentPath != path) {
-        d->currentPath = path;
-        QModelIndex index = d->model->index(path);
-        if (d->model->isDir(index)) {
-            d->currentView->selectionModel()->clear(); // to prevent bug with selecting dir we enter in
-            d->currentView->setRootIndex(index);
-
-            FileManagerHistoryItemData item;
-            item.path = path;
-            item.title = QFileInfo(path).fileName();
-            item.lastVisited = QDateTime::currentDateTime();
-            d->history->d_func()->appendItem(FileManagerHistoryItem(item));
-
-            emit currentPathChanged(path);
-        }
-    }
+    d->model->setUrl(url);
 }
 
 /*!
@@ -1034,138 +1012,31 @@ void FileManagerWidget::setItemsExpandable(bool expandable)
 }
 
 /*!
-    \property FileManagerWidget::selectedPaths
+    \property FileManagerWidget::selectedUrls
     This property holds list of path (files or folders) currently selected by a user.
 */
-QStringList FileManagerWidget::selectedPaths() const
+QList<QUrl> FileManagerWidget::selectedUrls() const
 {
     Q_D(const FileManagerWidget);
 
-    QStringList result;
+    QStringList paths;
     foreach (const QModelIndex &index, d->selectedIndexes()) {
-        result.append(d->model->filePath(index));
+        paths.append(d->model->itemModel()->filePath(index));
     }
     // TODO: remove hack when QColumnView will work correctly
-    result.removeDuplicates();
+    paths.removeDuplicates();
+
+    QList<QUrl> result;
+    foreach (const QString &path, paths) {
+        result.append(QUrl::fromLocalFile(path));
+    }
     return result;
 }
-
-/*!
-    \property FileManagerWidget::showHiddenFiles
-    Holds whether show hidden files or not.
-*/
-bool FileManagerWidget::showHiddenFiles() const
-{
-    Q_D(const FileManagerWidget);
-    return d->showHiddenFiles;
-}
-
-/*!
-    Enables or disables showing of hidden files.
-*/
-void FileManagerWidget::setShowHiddenFiles(bool show)
-{
-    Q_D(FileManagerWidget);
-
-    if (d->showHiddenFiles == show)
-        return;
-
-    d->showHiddenFiles = show;
-
-    if (show)
-        d->model->setFilter(mBaseFilters | QDir::Hidden);
-    else
-        d->model->setFilter(mBaseFilters);
-
-    emit showHiddenFilesChanged(show);
-}
-
-/*!
-    \fn void FileManagerWidget::showHiddenFilesChanged(bool show)
-    This signal is emitted when showHiddenFiles property is changed.
-*/
-
 
 /*!
     \fn void FileManagerWidget::selectedPathsChanged()
     This signal is emitted when user changes the selection in a view.
 */
-
-/*!
-    \property FileManagerWidget::sortingColumn
-    This property holds the column which are currently sorted.
-    Default value is FileManagerWidget::NameColumn.
-*/
-FileManagerWidget::Column FileManagerWidget::sortingColumn() const
-{
-    return d_func()->sortingColumn;
-}
-
-void FileManagerWidget::setSortingColumn(FileManagerWidget::Column column)
-{
-    Q_D(FileManagerWidget);
-
-    if (d->sortingColumn == column)
-        return;
-
-    d->sortingColumn = column;
-    d->updateSorting();
-
-    for (int i = NameColumn; i < ColumnCount; i++) {
-        d->actions[SortByName + i]->setChecked(column == NameColumn + i);
-    }
-
-    emit sortingChanged();
-}
-
-/*!
-    \fn void FileManagerWidget::sortingChanged()
-    This signal is emitted when FileManagerWidget::sortingColumn or
-    FileManagerWidget::sortingOrder properties are changed.
-*/
-
-/*!
-    \property FileManagerWidget::sortingOrder
-    This property holds the order in which FileManagerWidget::sortingColumn is
-    sorted.
-
-    Default value is Qt::AscendingOrder.
-*/
-Qt::SortOrder FileManagerWidget::sortingOrder() const
-{
-    return d_func()->sortingOrder;
-}
-
-void FileManagerWidget::setSortingOrder(Qt::SortOrder order)
-{
-    Q_D(FileManagerWidget);
-
-    if (d->sortingOrder == order)
-        return;
-
-    d->sortingOrder = order;
-    d->updateSorting();
-
-    d->actions[SortDescendingOrder]->setChecked(order == Qt::DescendingOrder);
-
-    emit sortingChanged();
-}
-
-/*!
-    Sets both sort \a column and sort \a order.
-*/
-void FileManagerWidget::setSorting(FileManagerWidget::Column column, Qt::SortOrder order)
-{
-    Q_D(FileManagerWidget);
-
-    if (d->sortingColumn == column && d->sortingOrder == order)
-        return;
-
-    d->sortingColumn = column;
-    d->sortingOrder = order;
-    d->updateSorting();
-    emit sortingChanged();
-}
 
 /*!
     \property FileManagerWidget::viewMode
@@ -1197,9 +1068,6 @@ void FileManagerWidget::setViewMode(ViewMode mode)
             d->currentView->setFocus();
         }
 
-        QModelIndex index = d->model->index(d->currentPath);
-        d->currentView->setRootIndex(index);
-
         d->actions[IconMode]->setChecked(mode == IconView);
         d->actions[ColumnMode]->setChecked(mode == ColumnView);
         d->actions[TreeMode]->setChecked(mode == TreeView);
@@ -1215,40 +1083,49 @@ void FileManagerWidget::setViewMode(ViewMode mode)
 */
 
 /*!
-    Returns pointer to a FileManager::FileSystemManager assotiated with this
-    widget.
-*/
-FileSystemManager * FileManagerWidget::fileSystemManager() const
-{
-    Q_D(const FileManagerWidget);
-
-    if (!d->fileSystemManager) {
-        const_cast<FileManagerWidgetPrivate*>(d)->setFileSystemManager(d->model->fileSystemManager());
-    }
-
-    return d->fileSystemManager;
-}
-
-/*!
-    Returns pointer to the FileManager::FileManagerHistory. Can be usefule if
-    you need some specific history data (like list of items to display).
-*/
-FileManagerHistory *FileManagerWidget::history() const
-{
-    Q_D(const FileManagerWidget);
-
-    return d->history;
-}
-
-/*!
     Returns pointer to a FileManager::FileSystemModel assotiated with this
     widget.
 */
-FileSystemModel * FileManagerWidget::model() const
+FileManagerModel * FileManagerWidget::model() const
 {
     Q_D(const FileManagerWidget);
-
     return d->model;
+}
+
+/*!
+    Sets \a model as the current model of the widget.
+
+    \note The widget does not take ownership of the model unless it is the
+    models's parent object. The parent object of the provided model remains the
+    owner of the object.
+
+    \note Widget deletes current model if widget is the model parent.
+*/
+void FileManagerWidget::setModel(FileManagerModel *model)
+{
+    Q_D(FileManagerWidget);
+
+    if (!model)
+        model = new FileManagerModel(this);
+
+    if (d->model == model)
+        return;
+
+    if (d->model) {
+        d->disconnectModel(d->model);
+
+        if (d->model->parent() == this)
+            delete d->model;
+    }
+
+    d->model = model;
+    Q_ASSERT(d->model);
+
+    d->setViewModel(d->currentView, d->model);
+
+    d->setFileSystemManager(d->model->itemModel()->fileSystemManager());
+    d->connectModel(d->model);
+    d->onUrlChanged(d->model->url());
 }
 
 /*!
@@ -1274,37 +1151,28 @@ bool FileManagerWidget::restoreState(const QByteArray &state)
     if (version != fmVersion)
         return false;
 
-    QString path;
-    bool alternate, expandable, showHiddenFiles;
-    quint8 flow, viewMode, sortColumn, sortOrder;
+    bool alternate, expandable;
+    quint8 flow, viewMode;
     QSize gridSize, iconSizes[MaxViews];
 
-    s >> path;
     s >> alternate;
     s >> expandable;
-    s >> showHiddenFiles;
     s >> flow;
     s >> gridSize;
     for (int i = 0; i < MaxViews; i++)
         s >> iconSizes[i];
     s >> viewMode;
-    s >> sortColumn;
-    s >> sortOrder;
 
     if (s.status() != QDataStream::Ok)
         return false;
 
-    setCurrentPath(path);
     setAlternatingRowColors(alternate);
     setItemsExpandable(expandable);
-    setShowHiddenFiles(showHiddenFiles);
     setFlow((Flow)flow);
     setGridSize(gridSize);
     for (int i = 0; i < MaxViews; i++)
         setIconSize(ViewMode(i), iconSizes[i]);
     setViewMode((FileManagerWidget::ViewMode)viewMode);
-    setSortingColumn((FileManagerWidget::Column)sortColumn);
-    setSortingOrder((Qt::SortOrder)sortOrder);
     return true;
 }
 
@@ -1314,22 +1182,20 @@ bool FileManagerWidget::restoreState(const QByteArray &state)
 */
 QByteArray FileManagerWidget::saveState() const
 {
+    Q_D(const FileManagerWidget);
+
     QByteArray state;
     QDataStream s(&state, QIODevice::WriteOnly);
 
     s << fmMagicNumber;
     s << fmVersion;
-    s << currentPath();
-    s << alternatingRowColors();
-    s << itemsExpandable();
-    s << showHiddenFiles();
-    s << (quint8)flow();
-    s << gridSize();
+    s << d->alternatingRowColors;
+    s << d->itemsExpandable;
+    s << (quint8)d->flow;
+    s << d->gridSize;
     for (int i = 0; i < MaxViews; i++)
-        s << iconSize(ViewMode(i));
-    s << (quint8)viewMode();
-    s << (quint8)sortingColumn();
-    s << (quint8)sortingOrder();
+        s << d->iconSizes[ViewMode(i)];
+    s << (quint8)d->viewMode;
 
     return state;
 }
@@ -1341,17 +1207,16 @@ void FileManagerWidget::clear()
 {
     Q_D(FileManagerWidget);
 
-    setCurrentPath(QString());
-    d->history->d_func()->items.clear();
-    d->history->d_func()->currentItemIndex = -1;
+    setUrl(QString());
+    d->model->history()->clear();
 }
 
-QMenu * FileManagerWidget::createStandardMenu(const QStringList &paths)
+QMenu * FileManagerWidget::createStandardMenu(const QList<QUrl> &urls)
 {
     Q_D(FileManagerWidget);
 
     QMenu *menu = new QMenu;
-    if (paths.isEmpty()) {
+    if (urls.isEmpty()) {
         menu->addAction(d->actions[NewFolder]);
         menu->addSeparator();
         menu->addAction(d->actions[ShowFileInfo]);
@@ -1375,7 +1240,7 @@ QMenu * FileManagerWidget::createStandardMenu(const QStringList &paths)
         menu->addAction(d->actions[Open]);
 
         OpenWithMenu *openWithMenu = new OpenWithMenu(menu);
-        openWithMenu->setPaths(paths);
+        openWithMenu->setUrls(urls);
         menu->addMenu(openWithMenu);
 
         menu->addSeparator();
@@ -1396,12 +1261,13 @@ QMenu * FileManagerWidget::createStandardMenu(const QStringList &paths)
 void FileManagerWidget::newFolder()
 {
     Q_D(FileManagerWidget);
-    QString dir = currentPath();
+    Q_ASSERT(url().isLocalFile());
+    QString dir = url().toLocalFile();
     if (dir == "") {
 //        emit error;
     } else {
         QString  folderName = tr("New Folder");
-        QModelIndex index = d->model->mkdir(d->model->index(dir), folderName);
+        QModelIndex index = d->itemModel()->mkdir(d->itemModel()->index(dir), folderName);
 
         if (index.isValid())
             d->currentView->edit(index);
@@ -1414,7 +1280,7 @@ void FileManagerWidget::newFolder()
 */
 void FileManagerWidget::open()
 {
-    emit openRequested(selectedPaths(), Qt::NoModifier);
+    emit openRequested(selectedUrls(), Qt::NoModifier);
 }
 
 /*!
@@ -1422,11 +1288,13 @@ void FileManagerWidget::open()
 */
 void FileManagerWidget::showFileInfo()
 {
-    QStringList paths = selectedPaths();
-    if (paths.isEmpty())
-        paths.append(currentPath());
+    QList<QUrl> urls = selectedUrls();
+    if (urls.isEmpty())
+        urls.append(url());
 
-    foreach (const QString &path, paths) {
+    foreach (const QUrl &url, urls) {
+        Q_ASSERT(url.isLocalFile());
+        QString path = url.toLocalFile();
         FileInfoDialog *dialog = new FileInfoDialog(this);
         dialog->setAttribute(Qt::WA_DeleteOnClose);
         dialog->setFileInfo(QFileInfo(path));
@@ -1439,6 +1307,8 @@ void FileManagerWidget::showFileInfo()
 */
 void FileManagerWidget::remove()
 {
+    Q_D(FileManagerWidget);
+
     if (FileManagerSettings::globalSettings()->warnOnFileRemove()) {
         QMessageBox messageBox;
         messageBox.setWindowTitle(tr("Remove files"));
@@ -1451,21 +1321,24 @@ void FileManagerWidget::remove()
             return;
     }
 
+    QStringList paths;
+    foreach (const QUrl &url, selectedUrls()) {
+        Q_ASSERT(url.isLocalFile());
+        paths.append(url.toLocalFile());
+    }
 #ifdef Q_OS_WIN
-    QStringList paths = selectedPaths();
-    int index = fileSystemManager()->remove(paths);
-    QFileCopier *copier = fileSystemManager()->copier(index);
+    int index = d->fileSystemManager->remove(paths);
+    QFileCopier *copier = d->fileSystemManager->copier(index);
     QEventLoop loop;
     connect(copier, SIGNAL(done(bool)), &loop, SLOT(quit()));
     loop.exec();
 
     // this is slow, but otherwise QFSM bugs when we remove files via copier.
-    Q_D(FileManagerWidget);
     foreach (const QString &path, paths) {
         d->model->remove(d->model->index(path));
     }
 #else
-    fileSystemManager()->remove(selectedPaths());
+    d->fileSystemManager->remove(paths);
 #endif
 }
 
@@ -1490,7 +1363,13 @@ void FileManagerWidget::rename()
 */
 void FileManagerWidget::moveToTrash()
 {
-    fileSystemManager()->moveToTrash(selectedPaths());
+    Q_D(FileManagerWidget);
+    QStringList paths;
+    foreach (const QUrl &url, selectedUrls()) {
+        Q_ASSERT(url.isLocalFile());
+        paths.append(url.toLocalFile());
+    }
+    d->fileSystemManager->moveToTrash(paths);
 }
 
 /*!
@@ -1498,7 +1377,8 @@ void FileManagerWidget::moveToTrash()
 */
 void FileManagerWidget::undo()
 {
-    fileSystemManager()->undo();
+    Q_D(FileManagerWidget);
+    d->fileSystemManager->undo();
 }
 
 /*!
@@ -1506,7 +1386,8 @@ void FileManagerWidget::undo()
 */
 void FileManagerWidget::redo()
 {
-    fileSystemManager()->redo();
+    Q_D(FileManagerWidget);
+    d->fileSystemManager->redo();
 }
 
 /*!
@@ -1516,14 +1397,7 @@ void FileManagerWidget::copy()
 {
     QClipboard * clipboard = QApplication::clipboard();
     QMimeData * data = new QMimeData();
-    QList<QUrl> urls;
-
-    QStringList paths = selectedPaths();
-
-    foreach (const QString &path, paths) {
-        urls.append(QUrl::fromLocalFile(path));
-    }
-    data->setUrls(urls);
+    data->setUrls(selectedUrls());
     clipboard->setMimeData(data);
 }
 
@@ -1558,40 +1432,12 @@ void FileManagerWidget::selectAll()
 }
 
 /*!
-    Goes one step back in the history.
-*/
-void FileManagerWidget::back()
-{
-    history()->back();
-}
-
-/*!
-    Goes one step forward in the history.
-*/
-void FileManagerWidget::forward()
-{
-    history()->forward();
-}
-
-/*!
-    Goes one level up from the current folder.
-*/
-void FileManagerWidget::up()
-{
-    Q_D(FileManagerWidget);
-
-    QDir dir(d->currentPath);
-    dir.cdUp();
-    setCurrentPath(dir.path());
-}
-
-/*!
     Shows FileManagerWidget's context menu.
 */
 void FileManagerWidget::showContextMenu(QPoint pos)
 {
-    QStringList paths = selectedPaths();
-    QMenu *menu = createStandardMenu(paths);
+    QList<QUrl> urls = selectedUrls();
+    QMenu *menu = createStandardMenu(urls);
     menu->exec(mapToGlobal(pos));
     delete menu;
 }

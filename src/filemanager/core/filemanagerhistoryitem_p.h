@@ -12,7 +12,7 @@ public:
     bool valid;
     QDateTime lastVisited;
     QString title;
-    QString path;
+    QUrl url;
 };
 
 } // namespace FileManager

@@ -38,7 +38,7 @@ QIcon FileManagerHistoryItem::icon() const
 
 bool FileManagerHistoryItem::isValid() const
 {
-    return !d->path.isEmpty();
+    return !d->url.isEmpty();
 }
 
 QDateTime FileManagerHistoryItem::lastVisited() const
@@ -51,9 +51,9 @@ QString FileManagerHistoryItem::title() const
     return d->title;
 }
 
-QString FileManagerHistoryItem::path() const
+QUrl FileManagerHistoryItem::url() const
 {
-    return d->path;
+    return d->url;
 }
 
 bool FileManagerHistoryItem::operator==(const FileManagerHistoryItem &other) const

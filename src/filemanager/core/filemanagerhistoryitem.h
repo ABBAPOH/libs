@@ -5,6 +5,7 @@
 
 #include <QtCore/QSharedDataPointer>
 #include <QtCore/QDateTime>
+#include <QtCore/QUrl>
 #include <QtGui/QIcon>
 
 namespace FileManager {
@@ -26,14 +27,14 @@ public:
 
     QDateTime lastVisited() const;
     QString title() const;
-    QString path() const;
+    QUrl url() const;
 
     bool operator==(const FileManagerHistoryItem &other) const;
 
 private:
     QSharedDataPointer<FileManagerHistoryItemData> d;
 
-    friend class FileManagerWidget;
+    friend class FileManagerModel;
 };
 
 } // namespace FileManager

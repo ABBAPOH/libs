@@ -18,6 +18,9 @@ class FILEMANAGER_EXPORT FileSystemManager : public QObject
     Q_DECLARE_PRIVATE(FileSystemManager)
     Q_DISABLE_COPY(FileSystemManager)
 
+    Q_PROPERTY(bool canRedo READ canRedo NOTIFY canRedoChanged)
+    Q_PROPERTY(bool canUndo READ canUndo NOTIFY canUndoChanged)
+
 public:
     enum FileOperationType {
         UnknownType = -1,

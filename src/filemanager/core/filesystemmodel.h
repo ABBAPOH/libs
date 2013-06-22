@@ -32,6 +32,7 @@ public:
 
 signals:
     void updateIndex(const QModelIndex index);
+    void fileSystemManagerChanged();
 
 private slots:
     void onThumbDone(const QString &path, const QImage &thumb);

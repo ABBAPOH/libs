@@ -37,6 +37,7 @@
 
 #include <FileManager/FileSystemManager>
 #include <FileManager/FileSystemModel>
+#include <FileManager/FileManagerModel>
 
 namespace FileManager {
 
@@ -53,12 +54,11 @@ public:
     void createActions();
     void retranslateUi();
 
+    void connectModel(FileManagerModel *model);
+    void disconnectModel(FileManagerModel *model);
     void setFileSystemManager(FileSystemManager *manager);
 
-    void setModel(FileSystemModel *model);
-
     QModelIndexList selectedIndexes() const;
-    void updateSorting();
 
     void paste(bool copy = true);
 
@@ -69,13 +69,16 @@ public:
     QColumnView *createColumnView();
     QTreeView *createTreeView();
     QAbstractItemView *testCurrentView(FileManagerWidget::ViewMode mode);
+    void setViewModel(QAbstractItemView *view, FileManagerModel *model);
 
     void updateListViewFlow(QListView *view);
 
 public slots:
+    void onUrlChanged(const QUrl &url);
+    void onSortingChanged(int column, Qt::SortOrder order);
     void onActivated(const QModelIndex &index);
-    void onCurrentItemIndexChanged(int index);
     void onSortIndicatorChanged(int logicalIndex, Qt::SortOrder order);
+    void onFileSystemManagerChanged();
 
     void toggleViewMode(bool);
     void toggleSortColumn(bool);
@@ -88,12 +91,10 @@ public:
     QSize iconSizes[FileManagerWidget::MaxViews];
     QStackedLayout * layout;
 
-    FileSystemModel *model;
-    QString currentPath;
+    inline FileSystemModel *itemModel() const { return model ? model->itemModel() : 0; }
+    FileManagerModel *model;
 
     FileSystemManager *fileSystemManager;
-
-    FileManagerHistory * history;
 
     bool blockKeyEvent;
     QSize gridSize;
@@ -102,9 +103,6 @@ public:
     bool alternatingRowColors;
     bool itemsExpandable;
     bool showHiddenFiles;
-
-    FileManagerWidget::Column sortingColumn;
-    Qt::SortOrder sortingOrder;
 
     QAction *actions[FileManagerWidget::ActionCount];
 

@@ -62,7 +62,7 @@ signals:
 protected:
     FileManagerHistoryPrivate *d_ptr;
 
-    friend class FileManagerWidget;
+    friend class FileManagerModel;
 
     friend FILEMANAGER_EXPORT QDataStream &operator<<(QDataStream & stream, const FileManagerHistory & history);
     friend FILEMANAGER_EXPORT QDataStream &operator>>(QDataStream & stream, FileManagerHistory & history);

@@ -15,6 +15,7 @@
 #include <Parts/constants.h>
 #include <Widgets/MiniSplitter>
 
+#include "filemanagermodel.h"
 #include "filemanagerwidget.h"
 #include "navigationmodel.h"
 #include "navigationpanel.h"
@@ -106,6 +107,7 @@ void FileExplorerWidgetPrivate::init()
     splitter->addWidget(widget);
 
     q->connect(fileManagerWidget, SIGNAL(selectedPathsChanged()), q, SLOT(onSelectedPathsChanged()));
+    q->connect(panel, SIGNAL(currentPathChanged(QString)), q, SLOT(onCurrentPathChanged(QString)));
 
     retranslateUi();
 }
@@ -308,7 +310,7 @@ bool FileExplorerWidget::restoreState(const QByteArray &arr)
     quint32 magic;
     quint8 version;
     bool panelVisible, statusBarVisible;
-    QByteArray splitterState, widgetState;
+    QByteArray splitterState, modelState, widgetState;
 
     s >> magic;
     if (magic != fileExplorerMagic)
@@ -321,11 +323,16 @@ bool FileExplorerWidget::restoreState(const QByteArray &arr)
     s >> panelVisible;
     s >> statusBarVisible;
     s >> splitterState;
+    s >> modelState;
     s >> widgetState;
+
+    if (s.status() != QDataStream::Ok)
+        return false;
 
     setPanelVisible(panelVisible);
     setStatusBarVisible(statusBarVisible);
     ok |= d->splitter->restoreState(splitterState);
+    ok |= d->fileManagerWidget->model()->restoreState(modelState);
     ok |= d->fileManagerWidget->restoreState(widgetState);
 
     return ok;
@@ -346,6 +353,7 @@ QByteArray FileExplorerWidget::saveState() const
     s << isPanelVisible();
     s << isStatusBarVisible();
     s << d->splitter->saveState();
+    s << d->fileManagerWidget->model()->saveState();
     s << d->fileManagerWidget->saveState();
 
     return state;
@@ -358,8 +366,14 @@ void FileExplorerWidget::onSelectedPathsChanged()
 {
     Q_D(FileExplorerWidget);
 
-    QStringList paths = d->fileManagerWidget->selectedPaths();
-    int count = paths.count();
+    QList<QUrl> urls = d->fileManagerWidget->selectedUrls();
+    int count = urls.count();
     QString text = count == 1 ? tr("Selected 1 object") : tr("Selected %1 objects").arg(count);
     d->statusLabel->setText(text);
+}
+
+void FileExplorerWidget::onCurrentPathChanged(const QString &path)
+{
+    Q_D(FileExplorerWidget);
+    d->fileManagerWidget->setUrl(QUrl::fromLocalFile(path));
 }

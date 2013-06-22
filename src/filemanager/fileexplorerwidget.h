@@ -51,6 +51,7 @@ signals:
 
 protected slots:
     void onSelectedPathsChanged();
+    void onCurrentPathChanged(const QString &path);
 
 protected:
     FileExplorerWidgetPrivate *d_ptr;
