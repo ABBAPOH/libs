@@ -14,7 +14,7 @@ Library {
     }
 
     Properties {
-        condition: qbs.targetOS === "mac"
+        condition: qbs.targetOS.contains("osx")
         cpp.frameworks: [
             "CoreServices",
             "DiskArbitration",
@@ -25,7 +25,7 @@ Library {
     }
 
     Properties {
-        condition: qbs.targetOS === "windows"
+        condition: qbs.targetOS.contains("windows")
         cpp.dynamicLibraries: [
             "Advapi32",
             "Mpr",
@@ -84,7 +84,7 @@ Library {
     }
     Group {
         name : "mac files"
-        condition: qbs.targetOS === "mac"
+        condition: qbs.targetOS.contains("osx")
         files: [
             "qdefaultprogram_mac.mm",
             "qdrivecontroller_mac.cpp",
@@ -95,7 +95,7 @@ Library {
 
     Group {
         name : "windows files"
-        condition: qbs.targetOS === "windows"
+        condition: qbs.targetOS.contains("windows")
         files: [
             "info2.cpp",
             "info2_p.h",
@@ -132,7 +132,7 @@ Library {
     }
     Group {
         name : "intq5 mac files"
-        condition: qbs.targetOS === "mac" && qtcore.versionMajor < 5
+        condition: qbs.targetOS.contains("osx") && qtcore.versionMajor < 5
         files: [
             "inqt5/qstandardpaths_mac.cpp"
         ]
@@ -146,7 +146,7 @@ Library {
     }
     Group {
         name : "inqt5 windows files"
-        condition: qbs.targetOS === "windows" && qtcore.versionMajor < 5
+        condition: qbs.targetOS.contains("windows") && qtcore.versionMajor < 5
         files: [
             "inqt5/qstandardpaths_win.cpp"
         ]

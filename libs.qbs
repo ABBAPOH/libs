@@ -14,19 +14,10 @@ Project {
     property string install_data_path: "share/" + app_target
     property string installNamePrefix: "@executable_path/../" + install_library_path + "/"
 
-    references: [
-        "src/3rdparty/qtsingleapplication/qtsingleapplication.qbs",
-        "src/bookmarks/bookmarks.qbs",
-        "src/extensionsystem/extensionsystem.qbs",
-        "src/filemanager/filemanager.qbs",
-        "src/imageviewer/imageviewer.qbs",
-        "src/io/io.qbs",
-        "src/parts/parts.qbs",
-        "src/widgets/widgets.qbs",
-        "tests/extensionsystem/pluginspec/pluginspec.qbs",
-        "tests/filemanager/filemanagerwidget/filemanagerwidget.qbs",
-        "tests/io/kdesettings/kdesettings.qbs",
-        "tests/parts/actionmanager/actionmanager.qbs",
-        "tests/parts/sharedproperties/sharedproperties.qbs"
-    ]
+    SubProject {
+        filePath: "src/src.qbs"
+    }
+    SubProject {
+        filePath: "tests/tests.qbs"
+    }
 }

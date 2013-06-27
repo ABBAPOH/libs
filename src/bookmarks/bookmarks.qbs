@@ -17,13 +17,13 @@ Library {
         "core/bookmarksmodel_p.h",
         "widgets/bookmarkdialog.cpp",
         "widgets/bookmarkdialog.h",
-        "bookmarks_global.h",
         "widgets/bookmarksmenu.cpp",
         "widgets/bookmarksmenu.h",
         "widgets/bookmarkstoolbar.cpp",
         "widgets/bookmarkstoolbar.h",
         "widgets/bookmarkswidget.cpp",
         "widgets/bookmarkswidget.h",
-        "widgets/bookmarkswidget_p.h"
+        "widgets/bookmarkswidget_p.h",
+        "bookmarks_global.h"
     ]
 }

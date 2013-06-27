@@ -24,12 +24,12 @@ StaticLibrary {
     Group {
         name : "unix files";
         condition : qtcore.versionMajor < 5 &&
-                    (qbs.targetOS === "unix" || qbs.targetOS === "mac" || qbs.targetOS === "linux")
+                    (qbs.targetOS === "unix" || qbs.targetOS.contains("osx") || qbs.targetOS === "linux")
         files : "qtlockedfile/qtlockedfile_unix.cpp"
     }
     Group {
         name : "windows files";
-        condition : qtcore.versionMajor < 5 && qbs.targetOS === "windows"
+        condition : qtcore.versionMajor < 5 && qbs.targetOS.contains("windows")
         files : "qtlockedfile/qtlockedfile_win.cpp"
     }
 }

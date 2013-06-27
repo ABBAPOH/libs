@@ -8,12 +8,12 @@ DynamicLibrary {
     cpp.dynamicLibraryPrefix: "lib"
 
     Properties {
-        condition: qbs.targetOS == "mac"
+        condition: qbs.targetOS.contains("osx")
         cpp.installNamePrefix: project.installNamePrefix
     }
 
     Properties {
-         condition: qbs.targetOS == "linux" || qbs.targetOS == "unix"
+         condition: qbs.targetOS.contains("linux") || qbs.targetOS.contains("unix")
          cpp.rpaths: "$ORIGIN"
     }
 
