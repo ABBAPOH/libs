@@ -3,7 +3,7 @@
 
 #include "widgets_global.h"
 
-#if QT_VERSION > 0x050000
+#if QT_VERSION >= 0x050000
 #include <QtWidgets/QMenu>
 #else
 #include <QtGui/QMenu>
