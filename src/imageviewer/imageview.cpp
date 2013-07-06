@@ -937,6 +937,7 @@ void ImageView::read(QIODevice *device, const QByteArray &format)
     QImageReader reader(device, format);
     for (int i = 0; i < reader.imageCount(); ++i) {
         ImageViewPrivate::ImageData data;
+        reader.jumpToImage(i);
         data.image = reader.read();
         data.originalImage = data.image;
         data.nextImageDelay = reader.nextImageDelay();
