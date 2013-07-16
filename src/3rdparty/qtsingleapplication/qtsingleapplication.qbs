@@ -4,6 +4,9 @@ StaticLibrary {
     name: "QtSingleApplication"
     Depends { name: "cpp" }
     Depends { id: qtcore; name: "Qt.core" }
+    Export {
+        Depends { name: "Qt"; submodules: ["network"] }
+    }
 
     cpp.includePaths: "qtlockedfile"
 
@@ -24,7 +27,7 @@ StaticLibrary {
     Group {
         name : "unix files";
         condition : qtcore.versionMajor < 5 &&
-                    (qbs.targetOS === "unix" || qbs.targetOS.contains("osx") || qbs.targetOS === "linux")
+                    (qbs.targetOS.contains("unix") || qbs.targetOS.contains("osx") || qbs.targetOS.contains("linux"))
         files : "qtlockedfile/qtlockedfile_unix.cpp"
     }
     Group {
