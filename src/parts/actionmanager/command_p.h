@@ -12,6 +12,7 @@ class CommandPrivate : public AbstractCommandPrivate
 public:
     CommandPrivate(Command *qq) : AbstractCommandPrivate(qq), configurable(true) {}
 
+    QString category;
     bool configurable;
     QVariant data;
     QKeySequence defaultShortcut;

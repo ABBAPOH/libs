@@ -36,6 +36,29 @@ Command::~Command()
 }
 
 /*!
+    \property Command::category
+
+    \brief This property contains group in which command is added in CommandsModel.
+*/
+
+QString Command::category() const
+{
+    Q_D(const Command);
+    return d->category;
+}
+
+void Command::setCategory(const QString &category)
+{
+    Q_D(Command);
+
+    if (d->category == category)
+        return;
+
+    d->category = category;
+    emit changed();
+}
+
+/*!
     \property Command::configurable
 
     \brief Holds whether property can be configured by user or not.

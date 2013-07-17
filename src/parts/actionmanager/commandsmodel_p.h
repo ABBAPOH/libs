@@ -38,6 +38,7 @@ struct CommandsModelItem
     inline CommandsModelItem *child(int row) const { return m_children.at(row); }
     inline int childCount() const { return m_children.count(); }
     inline QList<CommandsModelItem *> children() const { return m_children; }
+    inline QList<CommandsModelItem *> & childrenRef() { return m_children; }
     inline void insert(CommandsModelItem *item, int row) { item->m_parent = this; m_children.insert(row, item);}
     inline CommandsModelItem *parent() const { return m_parent; }
     inline void remove(CommandsModelItem *item) { m_children.removeAll(item); }
@@ -76,6 +77,7 @@ public:
     QSettings *settings;
     QMultiMap<QKeySequence, CommandsModelItem *> mapToItem;
     QMultiMap<QKeySequence, Command *> mapToCommand;
+    QMap<QString, CommandsModelItem *> categoryItems;
 };
 
 } // namespace Parts

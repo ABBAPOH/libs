@@ -15,6 +15,11 @@
 
 using namespace Parts;
 
+static inline bool ItemLessThan(CommandsModelItem *i1, CommandsModelItem *i2)
+{
+    return i1->name < i2->name;
+}
+
 QModelIndex CommandsModelPrivate::index(CommandsModelItem *item) const
 {
     return q_func()->createIndex(item->row(), 0, item);
@@ -51,25 +56,35 @@ void CommandsModelPrivate::build()
 
     ActionManager *am = ActionManager::instance();
 
-    foreach (CommandContainer *container, am->containers()) {
-        QList<AbstractCommand *> commands = container->commands();
-        if (commands.isEmpty())
+    foreach (AbstractCommand *cmd, am->commands()) {
+        Command *c = qobject_cast<Command*>(cmd);
+        if (!c || !c->isConfigurable())
             continue;
 
-        CommandsModelItem *categoryItem = new CommandsModelItem(CommandsModelItem::Folder, rootItem);
-        categoryItem->name = container->text();
+        QString group = c->category();
+        if (group.isEmpty())
+            group = CommandsModel::tr("General");
 
-        foreach (AbstractCommand *cmd, commands) {
-            Command *c = qobject_cast<Command*>(cmd);
-            if (!c)
-                continue;
-
-            CommandsModelItem *item = new CommandsModelItem(CommandsModelItem::Leaf, categoryItem);
-            item->cmd = c;
-            if (!mapToCommand.values(c->shortcut()).contains(c))
-                mapToCommand.insert(c->shortcut(), c);
-            mapToItem.insert(c->shortcut(), item);
+        CommandsModelItem *categoryItem = categoryItems.value(group);
+        if (!categoryItem) {
+            categoryItem = new CommandsModelItem(CommandsModelItem::Folder, rootItem);
+            categoryItem->name = group;
+            categoryItems.insert(group, categoryItem);
         }
+
+        CommandsModelItem *item = new CommandsModelItem(CommandsModelItem::Leaf, categoryItem);
+        item->cmd = c;
+        if (!mapToCommand.values(c->shortcut()).contains(c))
+            mapToCommand.insert(c->shortcut(), c);
+        mapToItem.insert(c->shortcut(), item);
+    }
+
+    QList<CommandsModelItem *> &list = rootItem->childrenRef();
+    qSort(list.begin(), list.end(), ItemLessThan);
+
+    foreach (CommandsModelItem *item, list) {
+        QList<CommandsModelItem *> &list = item->childrenRef();
+        qSort(list.begin(), list.end(), ItemLessThan);
     }
 
     q->endResetModel();
@@ -130,7 +145,7 @@ QVariant CommandsModel::data(const QModelIndex &index, int role) const
     if (role == Qt::DisplayRole || role == Qt::EditRole) {
         if (item->type() == CommandsModelItem::Leaf) {
             switch (column) {
-            case 0: return item->cmd->text();
+            case 0: return item->cmd->text().replace(QString("&"), QString());
             case 1: return item->cmd->shortcut();
             }
         } else {

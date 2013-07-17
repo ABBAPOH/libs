@@ -15,6 +15,7 @@ class PARTS_EXPORT Command : public AbstractCommand
     Q_DECLARE_PRIVATE(Command)
     Q_DISABLE_COPY(Command)
 
+    Q_PROPERTY(QString category READ category WRITE setCategory)
     Q_PROPERTY(bool configurable READ isConfigurable WRITE setConfigurable)
     Q_PROPERTY(QVariant data READ data WRITE setData)
     Q_PROPERTY(QKeySequence defaultShortcut READ defaultShortcut WRITE setDefaultShortcut)
@@ -24,6 +25,9 @@ class PARTS_EXPORT Command : public AbstractCommand
 public:
     explicit Command(const QByteArray &id, QObject *parent = 0);
     ~Command();
+
+    QString category() const;
+    void setCategory(const QString &category);
 
     bool isConfigurable() const;
     void setConfigurable(bool configurable);
