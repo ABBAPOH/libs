@@ -48,6 +48,7 @@ class FileManagerWidgetPrivate : public QObject
 public:
     FileManagerWidgetPrivate(FileManagerWidget *qq) : QObject(), q_ptr(qq) {}
 
+    void init();
     void setupUi();
     void createActions();
     void retranslateUi();

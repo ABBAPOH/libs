@@ -45,6 +45,59 @@ using namespace FileManager;
 static const quint32 fmMagicNumber = 0x46313574; // "F15t"
 static const quint8 fmVersion = 1;
 
+static QDir::Filters mBaseFilters = QDir::AllEntries | QDir::NoDotAndDotDot | QDir::AllDirs;
+
+void FileManagerWidgetPrivate::init()
+{
+    Q_Q(FileManagerWidget);
+
+    qRegisterMetaType<FileManagerWidget::ViewMode>("ViewMode");
+
+    setupUi();
+    createActions();
+    retranslateUi();
+
+    blockKeyEvent = false;
+    model = 0;
+    currentView = 0;
+    viewMode = (FileManagerWidget::ViewMode)-1; // to skip if in setView()
+    fileSystemManager = 0;
+    sortingColumn = (FileManagerWidget::Column)-1;
+    sortingOrder = (Qt::SortOrder)-1;
+    itemsExpandable = true;
+    alternatingRowColors = true;
+    showHiddenFiles = false;
+
+    history = new FileManagerHistory(this);
+    connect(history, SIGNAL(currentItemIndexChanged(int)),
+            this, SLOT(onCurrentItemIndexChanged(int)));
+
+    FileSystemModel *model = new FileSystemModel(this);
+#ifdef Q_OS_UNIX
+    model->setRootPath("/");
+#else
+    model->setRootPath("");
+#endif
+    model->setFilter(mBaseFilters);
+    model->setReadOnly(false);
+    setModel(model);
+    setFileSystemManager(FileSystemManager::instance());
+
+    q->setViewMode(FileManagerWidget::IconView);
+    q->setFlow(FileManagerWidget::LeftToRight);
+#ifdef Q_OS_MAC
+    q->setIconSize(FileManagerWidget::IconView, QSize(64, 64));
+    q->setGridSize(QSize(128, 128));
+#else
+    q->setIconSize(FileManagerWidget::IconView, QSize(32, 32));
+    q->setGridSize(QSize(96, 96));
+#endif
+    q->setIconSize(FileManagerWidget::ColumnView, QSize(16, 16));
+    q->setIconSize(FileManagerWidget::TreeView, QSize(16, 16));
+    q->setItemsExpandable(true);
+    q->setSorting(FileManagerWidget::NameColumn, Qt::AscendingOrder);
+}
+
 void FileManagerWidgetPrivate::setupUi()
 {
     Q_Q(FileManagerWidget);
@@ -55,9 +108,6 @@ void FileManagerWidgetPrivate::setupUi()
     q->setLayout(layout);
     q->setFocusPolicy(Qt::StrongFocus);
     q->setMinimumSize(200, 200);
-
-    createActions();
-    retranslateUi();
 }
 
 void FileManagerWidgetPrivate::createActions()
@@ -552,8 +602,6 @@ void FileManagerWidgetPrivate::onSelectionChanged()
     }
 }
 
-static QDir::Filters mBaseFilters = QDir::AllEntries | QDir::NoDotAndDotDot | QDir::AllDirs;
-
 /*!
     \class FileManager::FileManagerWidget
     \brief FileManagerWidget is a main widget class for displaying filesystem.
@@ -691,48 +739,7 @@ FileManagerWidget::FileManagerWidget(QWidget *parent) :
 {
     Q_D(FileManagerWidget);
 
-    qRegisterMetaType<ViewMode>("ViewMode");
-
-    d->setupUi();
-
-    d->blockKeyEvent = false;
-    d->model = 0;
-    d->currentView = 0;
-    d->viewMode = (FileManagerWidget::ViewMode)-1; // to skip if in setView()
-    d->fileSystemManager = 0;
-    d->sortingColumn = (FileManagerWidget::Column)-1;
-    d->sortingOrder = (Qt::SortOrder)-1;
-    d->itemsExpandable = true;
-    d->alternatingRowColors = true;
-    d->showHiddenFiles = false;
-
-    d->history = new FileManagerHistory(this);
-    connect(d->history, SIGNAL(currentItemIndexChanged(int)), d, SLOT(onCurrentItemIndexChanged(int)));
-
-    FileSystemModel *model = new FileSystemModel(this);
-#ifdef Q_OS_UNIX
-    model->setRootPath("/");
-#else
-    model->setRootPath("");
-#endif
-    model->setFilter(mBaseFilters);
-    model->setReadOnly(false);
-    d->setModel(model);
-    d->setFileSystemManager(FileSystemManager::instance());
-
-    setViewMode(IconView);
-    setFlow(LeftToRight);
-#ifdef Q_OS_MAC
-    setIconSize(IconView, QSize(64, 64));
-    setGridSize(QSize(128, 128));
-#else
-    setIconSize(IconView, QSize(32, 32));
-    setGridSize(QSize(96, 96));
-#endif
-    setIconSize(ColumnView, QSize(16, 16));
-    setIconSize(TreeView, QSize(16, 16));
-    setItemsExpandable(true);
-    setSorting(NameColumn, Qt::AscendingOrder);
+    d->init();
 }
 
 /*!
