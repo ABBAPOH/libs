@@ -27,6 +27,7 @@
 
 #include <Parts/ActionManager>
 #include <Parts/constants.h>
+#include <IO/BoolLocker>
 #include <IO/QDriveInfo>
 #include <IO/QFileCopier>
 
@@ -1630,11 +1631,11 @@ void FileManagerWidget::keyPressEvent(QKeyEvent *event)
             open();
             break;
         }
-    default:
-        d->blockKeyEvent = true;
+    default: {
+        BoolLocker l(&d->blockKeyEvent);
         qApp->sendEvent(d_func()->currentView, event);
-        d->blockKeyEvent = false;
         break;
+    }
     }
 }
 
@@ -1645,13 +1646,9 @@ void FileManagerWidget::keyReleaseEvent(QKeyEvent *event)
 {
     Q_D(FileManagerWidget);
 
-    if (!d->blockKeyEvent) { // prevent endless recursion
-        d->blockKeyEvent = true;
-        qApp->sendEvent(d_func()->currentView, event);
-        d->blockKeyEvent = false;
-    } else {
-        d->blockKeyEvent = false;
-    }
+    if (d->blockKeyEvent) // prevent endless recursion
+        return;
+
+    BoolLocker l(&d->blockKeyEvent);
+    qApp->sendEvent(d_func()->currentView, event);
 }
-
-
