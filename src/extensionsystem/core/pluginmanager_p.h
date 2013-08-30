@@ -27,7 +27,7 @@ public:
     PluginManagerPrivate(PluginManager *qq) : q_ptr(qq) {}
 
     bool load();
-    QStringList getSpecFiles(QStringList folders);
+    QStringList getSpecFiles(const QStringList &folders);
     QList<PluginSpec *> loadSpecs(QStringList specFiles);
 
     void fileChanged(const QString &libraryPath);

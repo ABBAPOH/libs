@@ -17,6 +17,22 @@ class EXTENSIONSYSTEM_EXPORT PluginViewModel : public QAbstractItemModel
     Q_DISABLE_COPY(PluginViewModel)
 
 public:
+    enum Columns {
+        Name,
+        LoadsOnStartup,
+        Enabled,
+        Version,
+        CompatibilityVersion,
+        Vendor,
+        Url,
+        LibraryPath,
+        Description,
+        Copyright,
+        License,
+        Dependencies,
+        ColumnCount
+    };
+    
     explicit PluginViewModel(QObject *parent = 0);
     ~PluginViewModel();
 

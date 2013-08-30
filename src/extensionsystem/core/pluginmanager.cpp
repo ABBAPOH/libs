@@ -279,7 +279,7 @@ void PluginManager::setTranslations(const QStringList &translations)
 
     Holds whether plugins are loaded (i.e. load() function was called), or not.
 */
-bool PluginManager::loaded()
+bool PluginManager::loaded() const
 {
     return d_func()->loaded;
 }
@@ -385,7 +385,7 @@ bool PluginManagerPrivate::load()
     return true; // return true if we have new plugins
 }
 
-QStringList PluginManagerPrivate::getSpecFiles(QStringList folders)
+QStringList PluginManagerPrivate::getSpecFiles(const QStringList &folders)
 {
     QStringList result;
     foreach (const QString &folder, folders) {

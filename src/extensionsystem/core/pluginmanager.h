@@ -37,7 +37,7 @@ public:
     bool hasErrors() const;
     QStringList errors() const;
 
-    bool loaded();
+    bool loaded() const;
 
     QString pluginsFolder() const;
     void setPluginsFolder(const QString &name);

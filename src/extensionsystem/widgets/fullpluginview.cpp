@@ -58,17 +58,17 @@ void FullPluginView::setModel(PluginViewModel * model)
     m_mapper->clearMapping();
     m_mapper->setModel(m_model);
     if (m_model != 0) {
-        m_mapper->setRootIndex(m_model->index(0,0));
-        m_mapper->addMapping(ui->label_Name, 0, "text");
-        m_mapper->addMapping(ui->label_Version, 3, "text");
-        m_mapper->addMapping(ui->label_CompatibilityVersion, 4, "text");
-        m_mapper->addMapping(ui->label_Vendor, 5, "text");
-        m_mapper->addMapping(ui->label_Url, 6, "text");
-        m_mapper->addMapping(ui->lineEdit_Location, 7, "text");
-        m_mapper->addMapping(ui->textBrowser_Description, 8, "plainText");
-        m_mapper->addMapping(ui->label_Copyright, 9, "text");
-        m_mapper->addMapping(ui->textBrowser_License, 10, "plainText");
-        m_mapper->addMapping(ui->textBrowser_Dependencies, 11, "plainText");
+        m_mapper->setRootIndex(m_model->index(0, 0));
+        m_mapper->addMapping(ui->label_Name, PluginViewModel::Name, "text");
+        m_mapper->addMapping(ui->label_Version, PluginViewModel::Version, "text");
+        m_mapper->addMapping(ui->label_CompatibilityVersion, PluginViewModel::CompatibilityVersion, "text");
+        m_mapper->addMapping(ui->label_Vendor, PluginViewModel::Vendor, "text");
+        m_mapper->addMapping(ui->label_Url, PluginViewModel::Url, "text");
+        m_mapper->addMapping(ui->lineEdit_Location, PluginViewModel::LibraryPath, "text");
+        m_mapper->addMapping(ui->textBrowser_Description, PluginViewModel::Description, "plainText");
+        m_mapper->addMapping(ui->label_Copyright, PluginViewModel::Copyright, "text");
+        m_mapper->addMapping(ui->textBrowser_License, PluginViewModel::License, "plainText");
+        m_mapper->addMapping(ui->textBrowser_Dependencies, PluginViewModel::Dependencies, "plainText");
     }
 }
 

@@ -28,16 +28,16 @@ PluginView::PluginView(QWidget *parent) :
 
     PluginViewModel* model = new PluginViewModel(this);
     ui->treeView->setModel(model);
-    ui->treeView->setColumnWidth(0, 190);
+    ui->treeView->setColumnWidth(PluginViewModel::Name, 190);
     ui->treeView->expandAll();
 
-    ui->treeView->hideColumn(4);
-    ui->treeView->hideColumn(6);
-    ui->treeView->hideColumn(7);
-    ui->treeView->hideColumn(8);
-    ui->treeView->hideColumn(9);
-    ui->treeView->hideColumn(10);
-    ui->treeView->hideColumn(11);
+    ui->treeView->hideColumn(PluginViewModel::CompatibilityVersion);
+    ui->treeView->hideColumn(PluginViewModel::Url);
+    ui->treeView->hideColumn(PluginViewModel::LibraryPath);
+    ui->treeView->hideColumn(PluginViewModel::Description);
+    ui->treeView->hideColumn(PluginViewModel::Copyright);
+    ui->treeView->hideColumn(PluginViewModel::License);
+    ui->treeView->hideColumn(PluginViewModel::Dependencies);
 
     ui->pushButton_More->setEnabled(false);
 
