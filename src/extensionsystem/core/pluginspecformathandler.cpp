@@ -126,8 +126,6 @@ bool stringToBool(bool *ok, const QString &s);
 
 static void readXmlPluginSpec(PluginSpecPrivate *d, QXmlStreamReader &reader);
 static void readXmlPluginSpecDependencies(PluginSpecPrivate *d, QXmlStreamReader &reader);
-static void readXmlPluginSpecOption(QXmlStreamReader &reader, Option &option);
-static void readXmlPluginSpecOptions(PluginSpecPrivate *d, QXmlStreamReader &reader);
 
 /*!
     \internal
@@ -181,43 +179,6 @@ bool PluginSpecXmlHandler::write(QIODevice *device, PluginSpecPrivate *d)
             writer.writeStartElement(QLatin1String("dependency"));
             writer.writeAttribute(QLatin1String("name"), dependency.name());
             writer.writeAttribute(QLatin1String("version"), dependency.version().toString());
-            writer.writeEndElement();
-        }
-        writer.writeEndElement();
-    }
-
-    if (!d->options.isEmpty()) {
-        writer.writeStartElement(QLatin1String("options"));
-
-        if (!d->defaultOption.isEmpty()) {
-            writer.writeAttribute(QLatin1String("default"), d->defaultOption);
-        }
-
-        foreach (const Option &opt, d->options) {
-            writer.writeStartElement(QLatin1String("option"));
-
-            writer.writeAttribute(QLatin1String("name"), opt.name());
-            if (opt.shortName() != QChar())
-                writer.writeAttribute(QLatin1String("shortName"), opt.shortName());
-            if ( opt.multiple())
-                writer.writeAttribute(QLatin1String("multiple"), QLatin1String("true"));
-
-            if (opt.isSingle()) {
-                writer.writeAttribute(QLatin1String("type"), QVariant::typeToName((QVariant::Type)opt.type(0)));
-            } else {
-                for (int i = 0; i < opt.count(); i++) {
-                    writer.writeStartElement(QLatin1String("value"));
-
-                    writer.writeAttribute(QLatin1String("name"), opt.name(i));
-                    writer.writeAttribute(QLatin1String("type"), QVariant::typeToName((QVariant::Type)opt.type(i)));
-
-                    writer.writeEndElement();
-                }
-            }
-
-            if (!opt.description().isEmpty())
-                writer.writeTextElement(QLatin1String("description"), opt.description());
-
             writer.writeEndElement();
         }
         writer.writeEndElement();
@@ -282,146 +243,6 @@ static void readXmlPluginSpecDependencies(PluginSpecPrivate *d, QXmlStreamReader
     }
 }
 
-static void readXmlPluginSpecOption(QXmlStreamReader &reader, Option &option)
-{
-    QString name;
-    bool readingElement = false;
-    while (!reader.atEnd()) {
-        reader.readNext();
-        name = reader.name().toString();
-        switch (reader.tokenType()) {
-
-        case QXmlStreamReader::StartElement:
-
-            if (readingElement)
-                reader.raiseError(QObject::tr("Unexpected token '%1'").arg(name));
-            readingElement = true;
-
-            if (name == QLatin1String("value")) {
-
-                // TODO: check attributes
-                QXmlStreamAttributes attrs = reader.attributes();
-                QString type = attrs.value(QLatin1String("type")).toString();
-                QString name = attrs.value(QLatin1String("name")).toString();
-                QVariant::Type t = QVariant::nameToType(type.toLatin1());
-                if (t == QVariant::Invalid)
-                    reader.raiseError(QObject::tr("Unknown type %1").arg(type));
-                option.addValue((Options::Type)t, name);
-                option.setSingle(false);
-
-            } else if (name == QLatin1String("description")) {
-
-                option.setDescription(reader.readElementText());
-                readingElement = false;
-
-            } else {
-                reader.raiseError(QObject::tr("Unknown element '%1'").arg(name));
-            }
-
-            break;
-
-        case QXmlStreamReader::EndElement:
-
-            readingElement = false;
-
-            if (name == QLatin1String("value"))
-                break;
-
-            if (name == QLatin1String("option"))
-                return;
-
-            reader.raiseError(QObject::tr("Expected </option>"));
-            break;
-
-        case QXmlStreamReader::Comment:
-            break;
-
-        case QXmlStreamReader::Characters:
-
-            if (!reader.text().toString().trimmed().isEmpty())
-                reader.raiseError(QObject::tr("Unexpected character sequence"));
-            break;
-
-        default:
-            reader.raiseError(QObject::tr("Unexpected token"));
-            break;
-        }
-    }
-}
-
-static void readXmlPluginSpecOptions(PluginSpecPrivate *d, QXmlStreamReader &reader)
-{
-    d->defaultOption = reader.attributes().value(QLatin1String("default")).toString();
-
-    QString name;
-    bool readingElement = false;
-    while (!reader.atEnd()) {
-        reader.readNext();
-        name = reader.name().toString();
-        switch (reader.tokenType()) {
-
-        case QXmlStreamReader::StartElement:
-
-            if (readingElement)
-                reader.raiseError(QObject::tr("Unexpected token '%1'").arg(name));
-            readingElement = true;
-
-            if (name == QLatin1String("option")) {
-
-                QXmlStreamAttributes attrs = reader.attributes();
-                QString name = attrs.value(QLatin1String("name")).toString();
-                QString shortName = attrs.value(QLatin1String("shortName")).toString();
-                QString type = attrs.value(QLatin1String("type")).toString();
-                QString multiple = attrs.value(QLatin1String("multiple")).toString();
-
-                Option opt(name);
-                opt.setSingle(true);
-                opt.setMultiple(stringToBool(0, multiple));
-                opt.setShortName(shortName.isEmpty() ? QChar() : shortName[0]);
-
-                readXmlPluginSpecOption(reader, opt);
-                if (opt.isSingle()) {
-                    QVariant::Type t = QVariant::nameToType(type.toLatin1());
-                    if (t == QVariant::Invalid)
-                        reader.raiseError(QObject::tr("Unknown type %1").arg(type));
-                    opt.addValue((Options::Type)t, QString());
-                }
-                d->options.append(opt);
-            } else {
-                reader.raiseError(QObject::tr("Unknown element '%1'").arg(name));
-            }
-
-            break;
-
-        case QXmlStreamReader::EndElement:
-
-            readingElement = false;
-
-//            if (name == QLatin1String("option"))
-//                break;
-
-            if (name == QLatin1String("options"))
-                return;
-
-            reader.raiseError(QObject::tr("Expected </options>"));
-            break;
-
-        case QXmlStreamReader::Comment:
-            break;
-
-        case QXmlStreamReader::Characters:
-
-            if (!reader.text().toString().trimmed().isEmpty())
-                reader.raiseError(QObject::tr("Unexpected character sequence"));
-            break;
-
-        default:
-            reader.raiseError(QObject::tr("Unexpected token"));
-            break;
-        }
-    }
-}
-
 static void readXmlPluginSpecAttributes(PluginSpecPrivate *d, QXmlStreamReader &reader)
 {
     QString name;
@@ -445,8 +266,6 @@ static void readXmlPluginSpecAttributes(PluginSpecPrivate *d, QXmlStreamReader &
                 d->url = reader.readElementText();
             } else if (name == QLatin1String("dependencyList")) {
                 readXmlPluginSpecDependencies(d, reader);
-            } else if (name == QLatin1String("options")) {
-                readXmlPluginSpecOptions(d, reader);
             } else {
                 reader.raiseError(QObject::tr("Unknown element %1").arg(name));
             }

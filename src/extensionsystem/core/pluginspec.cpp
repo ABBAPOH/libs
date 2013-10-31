@@ -669,23 +669,7 @@ bool PluginSpec::read(const QString &path)
     // TODO: implement
     // validate();
 
-    Options &opts = PluginManager::instance()->d_func()->options();
     d->isDefault = PluginManager::instance()->defaultPlugins().contains(name());
-    foreach (Option opt, d->options) {
-        if (!d->isDefault)
-            opt.setShortName(QChar());
-
-        if (!opts.addOption(opt)) {
-            d->setError(tr("Failed to add option %1 : '%2'").
-                        arg(opt.name()).
-                        arg(opts.errorString()));
-        }
-        if (!d->defaultOption.isEmpty() && opts.defaultOption().isEmpty()) {
-            if (d->isDefault)
-                opts.setDefaultOption(d->defaultOption);
-        }
-
-    }
 
     d->libraryPath = d->getLibraryPath(path);
 

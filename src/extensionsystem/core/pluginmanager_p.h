@@ -2,7 +2,6 @@
 #define PLUGINMANAGER_P_H
 
 #include "qobjectpool_p.h"
-#include "options.h"
 #include "pluginspecformathandler_p.h"
 
 #include <QtCore/QHash>
@@ -42,9 +41,6 @@ public:
     QList<PluginSpecFormatHandler*> handlers() const { return formatHandlers.toList(); }
     PluginSpecFormatHandler* handler(PluginSpec::Format f) const { return formatHandlers[f]; }
 
-    Options &options() { return opts; }
-    QVariantMap options(const QString &name);
-
     void clearError();
     void addErrorString(const QString &message);
 
@@ -67,8 +63,6 @@ public:
     QStringList foldersToBeLoaded; // folders to be loaded on startup or after watcher event
 
     QVector<PluginSpecFormatHandler*> formatHandlers;
-
-    Options opts;
 
     QStringList defaultPlugins;
 };

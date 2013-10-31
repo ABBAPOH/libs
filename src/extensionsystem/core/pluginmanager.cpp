@@ -139,35 +139,6 @@ void PluginManager::loadPlugins()
 }
 
 /*!
-    \brief Performs post initialization for all pugins with given \a arguments.
-
-    This function should be called after all arguments are parsed or new
-    arguments arive (for example, when new instance is started with different
-    arguments).
-*/
-void PluginManager::postInitialize(const QStringList &arguments)
-{
-    Q_D(PluginManager);
-
-    if (!d->loaded)
-        return;
-
-    if (!d->opts.parse(arguments)) {
-        d->addErrorString(PluginManager::tr("Error parsing options : '%1'").arg(d->opts.errorString()));
-        return;
-    }
-
-    foreach (PluginSpec *spec, plugins()) {
-        if (!spec->loaded())
-            continue;
-
-        QString name = spec->name();
-        QVariantMap options = d->options(name);
-        spec->plugin()->postInitialize(options);
-    }
-}
-
-/*!
     \brief Unloads all currently loaded plugins.
 
     Plugins are unloaded in reverse order to the oreder they were loaded.
@@ -488,18 +459,6 @@ void PluginManagerPrivate::enableSpecs(QList<PluginSpec *> specsToBeEnabled)
             }
         }
     }
-}
-
-QVariantMap PluginManagerPrivate::options(const QString &name)
-{
-    QVariantMap result;
-
-    PluginSpec *plugin = q_func()->plugin(name);
-    foreach (const Option &option, plugin->d_func()->options) {
-        QString name = option.name();
-        result.insert(name, opts.values().value(name));
-    }
-    return result;
 }
 
 void PluginManagerPrivate::clearError()

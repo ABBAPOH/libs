@@ -60,7 +60,6 @@ signals:
 
 public slots:
     void loadPlugins();
-    void postInitialize(const QStringList &arguments);
     void unloadPlugins();
 
     void updateDirectory(const QString &);

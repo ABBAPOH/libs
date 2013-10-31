@@ -13,8 +13,6 @@ Library {
         "core/iplugin.h",
         "core/mutablepluginspec.cpp",
         "core/mutablepluginspec.h",
-        "core/options.cpp",
-        "core/options.h",
         "core/pluginmanager.cpp",
         "core/pluginmanager.h",
         "core/pluginmanager_p.h",

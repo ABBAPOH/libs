@@ -23,7 +23,6 @@ public:
     virtual ~IPlugin();
 
     virtual bool initialize() = 0;
-    virtual void postInitialize(const QVariantMap &options) { Q_UNUSED(options); }
     virtual void shutdown() {}
 
 protected:
