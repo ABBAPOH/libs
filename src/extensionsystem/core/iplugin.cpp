@@ -37,7 +37,7 @@ IPlugin::~IPlugin()
 
     for (int i = d->addedObjects.count() - 1; i >= 0; i--) {
         QObject *object = d->addedObjects[i];
-        PluginManager::instance()->removeObject(object);
+        PluginManager::instance()->objectPool()->removeObject(object);
         delete object;
     }
 
@@ -69,7 +69,7 @@ IPlugin::~IPlugin()
 
 QObject *IPlugin::object(const QString &name)
 {
-    return PluginManager::instance()->object(name);
+    return PluginManager::instance()->objectPool()->object(name);
 }
 
 /*!
@@ -82,7 +82,7 @@ void IPlugin::addObject(QObject * object, const QString &name)
     if (!d->addedObjects.contains(object))
         d->addedObjects.append(object);
 
-    PluginManager::instance()->addObject(object, name);
+    PluginManager::instance()->objectPool()->addObject(object, name);
 }
 
 /*!
@@ -93,5 +93,5 @@ void IPlugin::removeObject(QObject * object)
     Q_D(IPlugin);
 
     d->addedObjects.removeAll(object);
-    PluginManager::instance()->removeObject(object);
+    PluginManager::instance()->objectPool()->removeObject(object);
 }

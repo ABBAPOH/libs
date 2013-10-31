@@ -23,15 +23,6 @@ QObjectPool::QObjectPool(QObject *parent) :
 }
 
 /*!
-    \internal
-*/
-QObjectPool::QObjectPool(QObjectPoolPrivate &dd, QObject* parent) :
-        QObject(parent),
-        d_ptr(&dd)
-{
-}
-
-/*!
     Destroys QObjectPool.
 */
 QObjectPool::~QObjectPool()

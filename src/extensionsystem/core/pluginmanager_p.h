@@ -65,6 +65,7 @@ public:
     QVector<PluginSpecFormatHandler*> formatHandlers;
 
     QStringList defaultPlugins;
+    QObjectPool *objectPool;
 };
 
 } // namespace ExtensionSystem

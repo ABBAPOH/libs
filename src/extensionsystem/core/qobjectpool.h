@@ -57,11 +57,7 @@ signals:
     void objectAdded(QObject *object);
     void objectRemoved(QObject *object);
 
-public slots:
-
 protected:
-    QObjectPool(QObjectPoolPrivate &dd, QObject *parent = 0);
-
     QObjectPoolPrivate *d_ptr;
 };
 

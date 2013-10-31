@@ -3,15 +3,15 @@
 
 #include "../extensionsystem_global.h"
 
-#include <ExtensionSystem/QObjectPool>
 #include <ExtensionSystem/PluginSpec>
+#include <ExtensionSystem/QObjectPool>
 
 #include <QtCore/QStringList>
 
 namespace ExtensionSystem {
 
 class PluginManagerPrivate;
-class EXTENSIONSYSTEM_EXPORT PluginManager : public QObjectPool
+class EXTENSIONSYSTEM_EXPORT PluginManager : public QObject
 {
     Q_OBJECT
     Q_DECLARE_PRIVATE(PluginManager)
@@ -51,6 +51,8 @@ public:
     QList<PluginSpec *> plugins() const;
     PluginSpec *plugin(const QString &name) const;
 
+    QObjectPool *objectPool() const;
+
 signals:
     void pluginsChanged();
 
@@ -73,6 +75,7 @@ private:
 
     friend class PluginSpec;
     friend class PluginSpecPrivate;
+    PluginManagerPrivate *d_ptr;
 };
 
 } // namespace ExtensionSystem

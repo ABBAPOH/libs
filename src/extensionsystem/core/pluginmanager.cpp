@@ -64,13 +64,15 @@ static inline QString getDefaultTranslationsPath()
     \brief Creates PluginManager with given \a parent.
 */
 PluginManager::PluginManager(QObject *parent) :
-    QObjectPool(*new PluginManagerPrivate(this), parent)
+    QObject(parent),
+    d_ptr(new PluginManagerPrivate(this))
 {
     Q_D(PluginManager);
     Q_ASSERT(!m_instance);
     m_instance = this;
     d->loaded = false;
 
+    d->objectPool = new QObjectPool(this);
     d->watcher = new QFileSystemWatcher(this);
     connect(d->watcher, SIGNAL(directoryChanged(QString)), SLOT(updateDirectory(QString)));
     connect(d->watcher, SIGNAL(fileChanged(QString)), SLOT(updateLibrary(QString)));
@@ -92,6 +94,8 @@ PluginManager::~PluginManager()
     unloadPlugins();
 
     qDeleteAll(d_func()->formatHandlers);
+
+    delete d_ptr;
 }
 
 /*!
@@ -275,6 +279,15 @@ PluginSpec *PluginManager::plugin(const QString &name) const
             return d->pluginSpecs[i];
     }
     return 0;
+}
+
+/*!
+    \brief Return PluginManager's inner object pool.
+*/
+QObjectPool * PluginManager::objectPool() const
+{
+    Q_D(const PluginManager);
+    return d->objectPool;
 }
 
 /*!
