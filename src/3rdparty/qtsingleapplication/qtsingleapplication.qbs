@@ -26,8 +26,7 @@ StaticLibrary {
     }
     Group {
         name : "unix files";
-        condition : qtcore.versionMajor < 5 &&
-                    (qbs.targetOS.contains("unix") || qbs.targetOS.contains("osx") || qbs.targetOS.contains("linux"))
+        condition : qtcore.versionMajor < 5 && qbs.targetOS.contains("unix")
         files : "qtlockedfile/qtlockedfile_unix.cpp"
     }
     Group {

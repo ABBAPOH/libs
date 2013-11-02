@@ -7,10 +7,8 @@ Library {
     Depends { id: qtcore; name: "Qt.core" }
     Depends { name: "Qt"; submodules: ["widgets"] }
     Depends {
-        name: "Qt";
-        submodules: qbs.targetOS == "unix" || qbs.targetOS == "linux" ?
-                        "dbus" :
-                        undefined
+        condition: qbs.targetOS.contains("unix") && !qbs.targetOS.contains("osx")
+        name: "Qt.dbus"
     }
 
     Properties {
@@ -74,7 +72,7 @@ Library {
 
     Group {
         name : "linux files"
-        condition: qbs.targetOS === "linux"
+        condition: qbs.targetOS.contains("linux")
         files: [
             "qdefaultprogram_linux.cpp",
             "qdrivecontroller_linux.cpp",
@@ -139,7 +137,8 @@ Library {
     }
     Group {
         name : "inqt5 unix files"
-        condition: (qbs.targetOS === "unix" || qbs.targetOS === "linux") && qtcore.versionMajor < 5
+        condition: qbs.targetOS.contains("unix") && !qbs.targetOS.contains("osx")
+                   && qtcore.versionMajor < 5
         files: [
             "inqt5/qstandardpaths_unix.cpp"
         ]
