@@ -1057,6 +1057,9 @@ void FileManagerWidget::setViewMode(ViewMode mode)
 {
     Q_D(FileManagerWidget);
 
+    if (mode < 0 || mode >= MaxViews)
+            return;
+
     if (d->viewMode != mode) {
         d->viewMode = mode;
         bool focus = d->currentView ? d->currentView->hasFocus() : false;
