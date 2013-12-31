@@ -5,7 +5,11 @@
 #include <QtCore/QFileInfo>
 #include <QtCore/QStringList>
 
+#if QT_VERSION >= 0x050000
+#include <QtCore/QMimeDatabase>
+#else
 #include <IO/QMimeDatabase>
+#endif
 
 #include "abstractdocumentfactory.h"
 
