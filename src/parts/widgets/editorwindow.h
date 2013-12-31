@@ -61,7 +61,6 @@ public:
 
     static EditorWindow *currentWindow();
     static QList<EditorWindow*> windows();
-    static EditorWindow *createWindow();
 
     virtual bool restoreState(const QByteArray &state);
     virtual QByteArray saveState() const;
@@ -70,9 +69,6 @@ public slots:
     virtual void open(const QUrl &url);
 
     virtual void close();
-
-    static void openNewWindow(const QUrl &url);
-//    static void openNewWindow(const QList<QUrl> &urls);
 
     void save();
     void saveAs();

@@ -9,7 +9,6 @@
 #include "ihistory.h"
 #include "history.h"
 #include "historybutton.h"
-#include "editorwindowfactory.h"
 #include "toolmodel.h"
 #include "toolwidget.h"
 #include "toolwidgetfactory.h"
@@ -230,17 +229,6 @@ QList<EditorWindow *> EditorWindow::windows()
     return result;
 }
 
-EditorWindow * EditorWindow::createWindow()
-{
-    EditorWindowFactory *factory = EditorWindowFactory::defaultFactory();
-    if (factory)
-        return factory->create();
-    else
-        qWarning() << "MainWindow::createWindow:" << "MainWindowFactory is not set";
-
-    return 0;
-}
-
 bool EditorWindow::restoreState(const QByteArray &arr)
 {
     QByteArray state = arr;
@@ -295,26 +283,6 @@ void EditorWindow::close()
 {
     QMainWindow::close();
 }
-
-void EditorWindow::openNewWindow(const QUrl &url)
-{
-    EditorWindowFactory *factory = EditorWindowFactory::defaultFactory();
-    if (factory) {
-        factory->openNewWindow(url);
-    } else {
-        qWarning() << "MainWindow::openNewWindow :" << "Must call MainWindowFactory::setDefaultfactory first";
-    }
-}
-
-//void MainWindow::openNewWindow(const QList<QUrl> &urls)
-//{
-//    MainWindowFactory *factory = MainWindowFactory::defaultFactory();
-//    if (factory) {
-//            factory->open(MainWindowFactory::OpenInNewWindow, urls);
-//    } else {
-//        qWarning() << "MainWindow::openNewWindow :" << "Must call MainWindowFactory::setDefaultfactory first";
-//    }
-//}
 
 void EditorWindow::save()
 {
