@@ -34,6 +34,8 @@ public:
     virtual bool restoreState(const QByteArray &state);
     virtual QByteArray saveState() const;
 
+    static QUrl editorUrl(const QByteArray &editorId);
+
 signals:
     void documentChanged();
 

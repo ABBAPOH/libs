@@ -1,5 +1,6 @@
 #include "abstracteditor.h"
 
+#include <QtCore/QCoreApplication>
 #include <QtCore/QSettings>
 #include <QtCore/QUrl>
 
@@ -97,4 +98,17 @@ bool AbstractEditor::restoreState(const QByteArray &state)
 QByteArray AbstractEditor::saveState() const
 {
     return document()->url().toEncoded();
+}
+
+/*!
+    Returns url for an \a editorId in form "applicationName://editorId".
+    It's better to use this static method instead of manually constructing url
+    as long as url form may change in future.
+*/
+QUrl AbstractEditor::editorUrl(const QByteArray &editorId)
+{
+    QUrl url;
+    url.setScheme(qApp->applicationName());
+    url.setHost(QString::fromUtf8(editorId));
+    return url;
 }
