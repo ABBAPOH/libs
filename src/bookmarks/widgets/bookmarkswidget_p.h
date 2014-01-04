@@ -84,40 +84,42 @@ protected:
         return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
     }
 
-    QModelIndex m_rootIndex;
+    QPersistentModelIndex m_rootIndex;
 };
 
 class BookmarksWidgetPrivate
 {
+    Q_DECLARE_PUBLIC(BookmarksWidget)
+    Q_DISABLE_COPY(BookmarksWidgetPrivate)
+
 public:
+    explicit BookmarksWidgetPrivate(BookmarksWidget *qq) : q_ptr(qq) {}
+
     QVBoxLayout *mainLayout;
     QToolBar *toolBar;
-    QSplitter *splitter;
 
     // tool bar
-    QAction *addFolderAction;
     QWidget *spacer;
     QLineEdit *lineEdit;
 
     // splitter
-    QTreeView *treeView;
     QTreeView *tableView;
 
     BookmarksModel *model;
-    FolderProxyModel *folderProxy;
     BookmarkListFilterModel *proxyModel;
 
     // actions
-    QAction *openAction;
-    QAction *openInTabAction;
-    QAction *openInWindowAction;
-    QAction *openInTabsAction;
 
-    QAction *renameAction;
-    QAction *editUrl;
-    QAction *editDescription;
+    QAction *actions[BookmarksWidget::ActionCount];
 
-    QAction *removeAction;
+public:
+    void init();
+    void createActions();
+    void createWidgets();
+    void retranslateUi();
+
+protected:
+    BookmarksWidget *q_ptr;
 };
 
 } // namespace Bookmarks

@@ -1,349 +1,401 @@
 #include "bookmarkswidget.h"
 #include "bookmarkswidget_p.h"
 
+#include <QtGui/QContextMenuEvent>
+#include <QHeaderView>
+
 using namespace Bookmarks;
 
+void BookmarksWidgetPrivate::init()
+{
+    Q_Q(BookmarksWidget);
+
+    model = 0;
+    proxyModel = new BookmarkListFilterModel(q);
+    proxyModel->setFilterCaseSensitivity(Qt::CaseInsensitive);
+
+    createActions();
+    createWidgets();
+    retranslateUi();
+}
+
+void BookmarksWidgetPrivate::createActions()
+{
+    Q_Q(BookmarksWidget);
+    actions[BookmarksWidget::ActionOpen] = new QAction(q);
+    actions[BookmarksWidget::ActionOpen]->setObjectName("Open");
+    actions[BookmarksWidget::ActionOpen]->setShortcut(QKeySequence::Open);
+    q->connect(actions[BookmarksWidget::ActionOpen], SIGNAL(triggered()), q, SLOT(openTriggered()));
+
+    actions[BookmarksWidget::ActionUp] = new QAction(q);
+    actions[BookmarksWidget::ActionUp]->setObjectName("Up");
+    actions[BookmarksWidget::ActionUp]->setShortcut(QKeySequence("Ctrl+Up"));
+    q->connect(actions[BookmarksWidget::ActionUp], SIGNAL(triggered()), q, SLOT(up()));
+
+    actions[BookmarksWidget::ActionRename] = new QAction(q);
+    actions[BookmarksWidget::ActionRename]->setObjectName("Rename");
+    q->connect(actions[BookmarksWidget::ActionRename], SIGNAL(triggered()), q, SLOT(rename()));
+
+    actions[BookmarksWidget::ActionEditUrl] = new QAction(q);
+    actions[BookmarksWidget::ActionEditUrl]->setObjectName("EditUrl");
+    q->connect(actions[BookmarksWidget::ActionEditUrl], SIGNAL(triggered()), q, SLOT(editUrl()));
+
+    actions[BookmarksWidget::ActionEditDescrition] = new QAction(q);
+    actions[BookmarksWidget::ActionEditDescrition]->setObjectName("EditDescrition");
+    q->connect(actions[BookmarksWidget::ActionEditDescrition], SIGNAL(triggered()), q, SLOT(editDescription()));
+
+    actions[BookmarksWidget::ActionNewFolder] = new QAction(q);
+    actions[BookmarksWidget::ActionNewFolder]->setObjectName("New");
+    q->connect(actions[BookmarksWidget::ActionNewFolder], SIGNAL(triggered()), q, SLOT(addFolder()));
+
+    actions[BookmarksWidget::ActionRemove] = new QAction(q);
+    actions[BookmarksWidget::ActionRemove]->setObjectName("Remove");
+    q->connect(actions[BookmarksWidget::ActionRemove], SIGNAL(triggered()), q, SLOT(remove()));
+}
+
+void BookmarksWidgetPrivate::createWidgets()
+{
+    Q_Q(BookmarksWidget);
+
+    toolBar = new QToolBar(q);
+    toolBar->setContextMenuPolicy(Qt::CustomContextMenu);
+
+    spacer = new QWidget(toolBar);
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+
+    lineEdit = new QLineEdit(toolBar);
+    lineEdit->setPlaceholderText(BookmarksWidget::tr("Filter"));
+    lineEdit->setStyleSheet("QLineEdit { border-radius : 8px; }");
+    lineEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    lineEdit->setMinimumWidth(200);
+    q->connect(lineEdit, SIGNAL(textEdited(QString)), proxyModel, SLOT(setFilterFixedString(QString)));
+
+    toolBar->addAction(actions[BookmarksWidget::ActionNewFolder]);
+    toolBar->addWidget(spacer);
+    toolBar->addWidget(lineEdit);
+
+    tableView = new QTreeView(q);
+    tableView->setExpandsOnDoubleClick(false);
+    tableView->setEditTriggers(QAbstractItemView::SelectedClicked);
+    tableView->setDragDropMode(QAbstractItemView::DragDrop);
+    // TODO: allow removing multiple indexes first
+//    tableView->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    tableView->setAcceptDrops(true);
+    tableView->setDefaultDropAction(Qt::MoveAction);
+    tableView->header()->setContextMenuPolicy(Qt::CustomContextMenu);
+    tableView->setModel(proxyModel);
+    q->connect(tableView, SIGNAL(activated(QModelIndex)), q, SLOT(onActivated(QModelIndex)));
+
+    mainLayout = new QVBoxLayout(q);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+    mainLayout->setSpacing(0);
+    mainLayout->addWidget(toolBar);
+    mainLayout->addWidget(tableView);
+    q->setLayout(mainLayout);
+}
+
+void BookmarksWidgetPrivate::retranslateUi()
+{
+    actions[BookmarksWidget::ActionOpen]->setText(BookmarksWidget::tr("Open"));
+    actions[BookmarksWidget::ActionUp]->setText(BookmarksWidget::tr("Up"));
+    actions[BookmarksWidget::ActionRename]->setText(BookmarksWidget::tr("Rename"));
+    actions[BookmarksWidget::ActionEditUrl]->setText(BookmarksWidget::tr("Edit url"));
+    actions[BookmarksWidget::ActionEditDescrition]->setText(BookmarksWidget::tr("Edit description"));
+    actions[BookmarksWidget::ActionNewFolder]->setText(BookmarksWidget::tr("Add folder"));
+    actions[BookmarksWidget::ActionRemove]->setText(BookmarksWidget::tr("Remove"));
+}
+
+/*!
+    \class Bookmarks::BookmarksWidget
+    This widget displays BookmarksModel as a tree and provides actions for
+    editing bookmarks.
+*/
+
+/*!
+    Creates BookmarksWidget with the given \a parent.
+*/
 BookmarksWidget::BookmarksWidget(QWidget *parent) :
     QWidget(parent),
-    d(new BookmarksWidgetPrivate)
+    d_ptr(new BookmarksWidgetPrivate(this))
 {
-    setupUi();
-
-    d->model = 0;
-    d->folderProxy = new FolderProxyModel(this);
-    d->proxyModel = new BookmarkListFilterModel(this);
-    d->proxyModel->setFilterCaseSensitivity(Qt::CaseInsensitive);
-
-    d->treeView->setModel(d->folderProxy);
-    d->tableView->setModel(d->proxyModel);
-
-    connect(d->tableView, SIGNAL(activated(QModelIndex)), SLOT(onActivated(QModelIndex)));
-    connect(d->tableView, SIGNAL(customContextMenuRequested(QPoint)), SLOT(showTableViewMenu(QPoint)));
-    connect(d->treeView->selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)), SLOT(onClicked(QModelIndex)));
-    connect(d->treeView, SIGNAL(customContextMenuRequested(QPoint)), SLOT(showTreeViewMenu(QPoint)));
-    connect(d->lineEdit, SIGNAL(textEdited(QString)), SLOT(onTextEdited(QString)));
-
-    connect(d->addFolderAction, SIGNAL(triggered()), SLOT(addFolder()));
-    connect(d->openAction, SIGNAL(triggered()), SLOT(openTriggered()));
-    connect(d->openInTabAction, SIGNAL(triggered()), SLOT(openInTabTriggered()));
-    connect(d->openInWindowAction, SIGNAL(triggered()), SLOT(openInWindowTriggered()));
-    connect(d->openInTabsAction, SIGNAL(triggered()), SLOT(openInTabsTriggered()));
-
-    connect(d->editUrl, SIGNAL(triggered()), SLOT(editUrl()));
-    connect(d->editDescription, SIGNAL(triggered()), SLOT(editDescription()));
-    connect(d->renameAction, SIGNAL(triggered()), SLOT(rename()));
-
-    connect(d->removeAction, SIGNAL(triggered()), SLOT(remove()));
-
-    connect(d->splitter, SIGNAL(splitterMoved(int,int)), SIGNAL(stateChanged()));
+    Q_D(BookmarksWidget);
+    d->init();
 }
 
+/*!
+    Destroys BookmarksWidget.
+*/
 BookmarksWidget::~BookmarksWidget()
 {
-    delete d;
+    delete d_ptr;
 }
 
+/*!
+    Returns pointer to an action for a given \a action enum or 0 if value is
+    invalid.
+*/
+QAction *BookmarksWidget::action(BookmarksWidget::Action action) const
+{
+    Q_D(const BookmarksWidget);
+
+    if (action <= BookmarksWidget::ActionNone || action >= BookmarksWidget::ActionCount)
+        return 0;
+    return d->actions[action];
+}
+
+/*!
+    Returns current model.
+*/
 BookmarksModel * BookmarksWidget::model() const
 {
+    Q_D(const BookmarksWidget);
     return d->model;
 }
 
+/*!
+    Sets current model.
+*/
 void BookmarksWidget::setModel(BookmarksModel *model)
 {
+    Q_D(BookmarksWidget);
+
     d->model = model;
-    d->folderProxy->setSourceModel(model);
     d->proxyModel->setSourceModel(model);
-    d->treeView->expandAll();
     d->tableView->setColumnWidth(0, 200);
     d->tableView->setColumnWidth(1, 200);
-    d->treeView->selectionModel()->clearSelection();
-    QModelIndex index = model->index(0,0, QModelIndex());
-    index = d->folderProxy->mapFromSource(index);
-    d->treeView->selectionModel()->select(index, QItemSelectionModel::Select);
-    onClicked(index);
 }
 
-bool BookmarksWidget::restoreState(const QByteArray &state)
+/*!
+    Returns list of selected rows in a view.
+*/
+QModelIndexList BookmarksWidget::selectedIndexes() const
 {
-    return d->splitter->restoreState(state);
+    Q_D(const BookmarksWidget);
+
+    QModelIndexList result;
+    QModelIndexList indexes = d->tableView->selectionModel()->selectedRows();
+    foreach (const QModelIndex &index, indexes) {
+        const QModelIndex sourceIndex = d->proxyModel->mapToSource(index);
+        result.append(sourceIndex);
+    }
+    return result;
+}
+
+bool BookmarksWidget::restoreState(const QByteArray &/*state*/)
+{
+    return true;
 }
 
 QByteArray BookmarksWidget::saveState() const
 {
-    return d->splitter->saveState();
+    return QByteArray();
 }
 
+/*!
+    \reimp
+*/
 QSize BookmarksWidget::minimumSizeHint() const
 {
     return QSize(200, 200);
 }
 
+/*!
+    \reimp
+*/
 QSize BookmarksWidget::sizeHint() const
 {
     return QSize(800, 600);
 }
 
-void BookmarksWidget::onClicked(const QModelIndex &index)
-{
-    QModelIndex sourceIndex = d->folderProxy->mapToSource(index);
-    QModelIndex proxyIndex = d->proxyModel->mapFromSource(sourceIndex);
-    d->proxyModel->setRootIndex(sourceIndex);
-    d->tableView->setRootIndex(proxyIndex);
-}
+/*!
+    Creates and returns standard context menu. You can add or remove actions
+    from the menu to customize widget's behaviour.
 
-void BookmarksWidget::onActivated(const QModelIndex &index)
+    \note The ownership of the created menu is transfered to caller of this
+    funciton.
+*/
+QMenu *BookmarksWidget::createStandardContextMenu() const
 {
-    QModelIndex sourceIndex = d->proxyModel->mapToSource(index);
-    QModelIndex folderIndex = d->folderProxy->mapFromSource(sourceIndex);
-    if (d->model->isFolder(sourceIndex)) {
-        d->proxyModel->setRootIndex(sourceIndex);
-        d->treeView->selectionModel()->clear();
-        d->treeView->selectionModel()->select(folderIndex, QItemSelectionModel::Select);
-        d->treeView->expand(folderIndex.parent());
-        d->tableView->setRootIndex(index);
+    Q_D(const BookmarksWidget);
+
+    const QModelIndexList indexes = selectedIndexes();
+    QScopedPointer<QMenu> menu(new QMenu);
+
+    if (indexes.isEmpty()) {
+        menu->addAction(d->actions[BookmarksWidget::ActionNewFolder]);
     } else {
-        emit open(d->model->data(sourceIndex, BookmarksModel::UrlRole).toUrl());
-    }
-}
-
-void BookmarksWidget::onTextEdited(const QString &text)
-{
-    d->proxyModel->setFilterFixedString(text);
-}
-
-void BookmarksWidget::addFolder()
-{
-    QWidget *w = focusWidget();
-    if (w == d->treeView) {
-        QModelIndexList indexes = d->treeView->selectionModel()->selectedIndexes();
-        if (indexes.isEmpty())
-            return;
-        QModelIndex index = indexes.first();
-        QModelIndex sourceIndex = d->folderProxy->mapToSource(index);
-        QModelIndex newIndex = d->model->addFolder("New bookmark folder", sourceIndex);
-        d->treeView->expand(index);
-        d->treeView->edit(d->folderProxy->mapFromSource(newIndex));
-    } else {
-        QModelIndex index = d->tableView->rootIndex();
-        QModelIndex sourceIndex = d->proxyModel->mapToSource(index);
-        QModelIndex newIndex = d->model->addFolder("New bookmark folder", sourceIndex);
-        d->tableView->edit(d->proxyModel->mapFromSource(newIndex));
-    }
-}
-
-void BookmarksWidget::showTreeViewMenu(QPoint p)
-{
-    if (!d->treeView->indexAt(p).isValid())
-        return;
-
-    QMenu menu;
-    menu.addAction(d->openInTabsAction);
-    menu.addSeparator();
-    menu.addAction(d->renameAction);
-    menu.addSeparator();
-    menu.addAction(d->removeAction);
-    menu.exec(d->treeView->viewport()->mapToGlobal(p));
-}
-
-void BookmarksWidget::showTableViewMenu(QPoint p)
-{
-    QWidget *w = focusWidget();
-    if (w != d->tableView)
-        return;
-
-    if (!d->tableView->indexAt(p).isValid())
-        d->tableView->clearSelection();
-
-    QModelIndex sourceIndex = selectedIndex();
-    QMenu menu;
-
-    if (!sourceIndex.isValid()) {
-        menu.addAction(d->addFolderAction);
-    } else if (d->model->isFolder(sourceIndex)) {
-        menu.addAction(d->openInTabsAction);
-        menu.addSeparator();
-        menu.addAction(d->renameAction);
-        menu.addSeparator();
-        menu.addAction(d->removeAction);
-    } else {
-        menu.addAction(d->openAction);
-        menu.addAction(d->openInTabAction);
-        menu.addAction(d->openInWindowAction);
-        menu.addSeparator();
-        menu.addAction(d->renameAction);
-        menu.addAction(d->editUrl);
-        menu.addAction(d->editDescription);
-        menu.addSeparator();
-        menu.addAction(d->removeAction);
-    }
-    menu.exec(d->tableView->viewport()->mapToGlobal(p));
-}
-
-void BookmarksWidget::openTriggered()
-{
-    QModelIndex index = selectedBookmarkIndex();
-    if (index.isValid())
-        emit open(d->model->data(index, BookmarksModel::UrlRole).toUrl());
-}
-
-void BookmarksWidget::openInTabTriggered()
-{
-    QModelIndex index = selectedBookmarkIndex();
-    if (index.isValid())
-        emit openInTab(d->model->data(index, BookmarksModel::UrlRole).toUrl());
-}
-
-void BookmarksWidget::openInWindowTriggered()
-{
-    QModelIndex index = selectedBookmarkIndex();
-    if (index.isValid())
-        emit openInWindow(d->model->data(index, BookmarksModel::UrlRole).toUrl());
-}
-
-void BookmarksWidget::openInTabsTriggered()
-{
-    QList<QUrl> urls;
-    QModelIndex index = selectedIndex();
-    if (!index.isValid())
-        return;
-    QModelIndexList indexes;
-    indexes.append(index);
-    while (!indexes.isEmpty()) {
-        index = indexes.takeFirst();
-        for (int i = 0; i < d->model->rowCount(index); i++) {
-            QModelIndex idx = d->model->index(i, 0, index);
-            if (d->model->isFolder(idx)) {
-                indexes.append(idx);
-            } else {
-                urls.append(d->model->data(idx, BookmarksModel::UrlRole).toUrl());
+        menu->addAction(d->actions[BookmarksWidget::ActionOpen]);
+        menu->addSeparator();
+        if (indexes.count() == 1) {
+            menu->addAction(d->actions[BookmarksWidget::ActionRename]);
+            if (!d->model->isFolder(indexes.first())) {
+                menu->addAction(d->actions[BookmarksWidget::ActionEditUrl]);
+                menu->addAction(d->actions[BookmarksWidget::ActionEditDescrition]);
             }
+            menu->addSeparator();
+        }
+        menu->addAction(d->actions[BookmarksWidget::ActionRemove]);
+    }
+    return menu.take();
+}
+
+QList<QUrl> BookmarksWidget::urlsForIndexes(const QModelIndexList &indexes)
+{
+    QModelIndexList list = indexes;
+    QList<QUrl> urls;
+    while (!list.isEmpty()) {
+        QModelIndex index = list.takeFirst();
+        const BookmarksModel *model = qobject_cast<const BookmarksModel*>(index.model());
+        Q_ASSERT(model);
+        if (model->isFolder(index)) {
+            for (int i = 0; i < model->rowCount(index); i++) {
+                QModelIndex idx = model->index(i, 0, index);
+                list.append(idx);
+            }
+        } else {
+            urls.append(model->data(index, BookmarksModel::UrlRole).toUrl());
         }
     }
-    emit open(urls);
+    return urls;
 }
 
+/*!
+    Creates new bookmark folder in the current floder.
+*/
+void BookmarksWidget::addFolder()
+{
+    Q_D(BookmarksWidget);
+
+    QModelIndex index = d->tableView->rootIndex();
+    QModelIndex sourceIndex = d->proxyModel->mapToSource(index);
+    QModelIndex newIndex = d->model->addFolder("New bookmark folder", sourceIndex);
+    d->tableView->edit(d->proxyModel->mapFromSource(newIndex));
+}
+
+/*!
+    Goes to the parent folder.
+*/
+void BookmarksWidget::up()
+{
+    Q_D(BookmarksWidget);
+
+    QModelIndex index = d->tableView->rootIndex();
+    if (!index.isValid())
+        return;
+    d->tableView->setRootIndex(index.parent());
+}
+
+/*!
+    Starts editing name of the selected bookmark of folder.
+*/
 void BookmarksWidget::rename()
 {
-    QWidget *w = focusWidget();
-    QAbstractItemView *view = qobject_cast<QAbstractItemView*>(w);
-    if (view) {
-        QModelIndexList indexes = view->selectionModel()->selectedIndexes();
-        if (indexes.isEmpty())
-            return;
-        QModelIndex index = indexes.first();
-        view->edit(index);
-    }
+    Q_D(BookmarksWidget);
+
+    const QModelIndexList indexes = selectedIndexes();
+    if (indexes.count() != 1)
+        return;
+
+    QModelIndex index = indexes.first();
+    index = d->proxyModel->mapFromSource(index);
+    index = index.sibling(index.row(), 0);
+    d->tableView->edit(index);
 }
 
+/*!
+    Starts editing url of the selected bookmark.
+*/
 void BookmarksWidget::editUrl()
 {
-    QModelIndex index = selectedBookmarkIndex();
-    if (index.isValid()) {
-        index = d->proxyModel->mapFromSource(index);
-        index = d->proxyModel->index(index.row(), 1, index.parent());
-        d->tableView->edit(index);
-    }
+    Q_D(BookmarksWidget);
+
+    const QModelIndexList indexes = selectedIndexes();
+    if (indexes.count() != 1)
+        return;
+
+    QModelIndex index = indexes.first();
+    if (d->model->isFolder(index))
+        return;
+    index = d->proxyModel->mapFromSource(index);
+    index = index.sibling(index.row(), 1);
+    d->tableView->edit(index);
 }
 
+/*!
+    Starts editing description of the selected bookmark.
+*/
 void BookmarksWidget::editDescription()
 {
-    QModelIndex index = selectedBookmarkIndex();
-    if (index.isValid()) {
-        index = d->proxyModel->mapFromSource(index);
-        index = d->proxyModel->index(index.row(), 2, index.parent());
-        d->tableView->edit(index);
-    }
+    Q_D(BookmarksWidget);
+
+    const QModelIndexList indexes = selectedIndexes();
+    if (indexes.count() != 1)
+        return;
+
+    QModelIndex index = indexes.first();
+    if (d->model->isFolder(index))
+        return;
+    index = d->proxyModel->mapFromSource(index);
+    index = index.sibling(index.row(), 2);
+    d->tableView->edit(index);
 }
 
+/*!
+    Removes selected bookmark or folder.
+*/
 void BookmarksWidget::remove()
 {
-    QModelIndex index = selectedIndex();
-    if (index.isValid())
-        d->model->remove(index);
+    Q_D(BookmarksWidget);
+
+    const QModelIndexList indexes = selectedIndexes();
+    if (indexes.count() != 1)
+        return;
+
+    QModelIndex index = indexes.first();
+    d->model->remove(index);
 }
 
-void BookmarksWidget::setupUi()
+/*!
+    \reimp
+*/
+void BookmarksWidget::contextMenuEvent(QContextMenuEvent *event)
 {
-    d->toolBar = new QToolBar();
-
-    d->addFolderAction = new QAction(tr("Add folder"), d->toolBar);
-
-    d->spacer = new QWidget(d->toolBar);
-    d->spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-
-    d->lineEdit = new QLineEdit(d->toolBar);
-    d->lineEdit->setPlaceholderText(tr("Filter"));
-    d->lineEdit->setStyleSheet("QLineEdit { border-radius : 8px; }");
-    d->lineEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    d->lineEdit->setMinimumWidth(200);
-
-    d->toolBar->addAction(d->addFolderAction);
-    d->toolBar->addWidget(d->spacer);
-    d->toolBar->addWidget(d->lineEdit);
-
-    d->splitter = new QSplitter(this);
-    d->splitter->setHandleWidth(1);
-
-    d->treeView = new QTreeView(d->splitter);
-    d->treeView->setHeaderHidden(true);
-    d->treeView->setExpandsOnDoubleClick(true);
-    d->treeView->setEditTriggers(QAbstractItemView::SelectedClicked);
-    d->treeView->setContextMenuPolicy(Qt::CustomContextMenu);
-    d->treeView->setDragDropMode(QAbstractItemView::DragDrop);
-    d->treeView->setAcceptDrops(true);
-    d->treeView->setDefaultDropAction(Qt::MoveAction);
-
-    d->tableView = new QTreeView(d->splitter);
-    d->tableView->setItemsExpandable(false);
-    d->tableView->setRootIsDecorated(false);
-    d->tableView->setEditTriggers(QAbstractItemView::SelectedClicked);
-    d->tableView->setContextMenuPolicy(Qt::CustomContextMenu);
-    d->tableView->setDragDropMode(QAbstractItemView::DragDrop);
-    d->tableView->setAcceptDrops(true);
-    d->tableView->setDefaultDropAction(Qt::MoveAction);
-
-    d->splitter->setSizes(QList<int>() << 300 << 900); // 1200; 1/4
-
-    d->mainLayout = new QVBoxLayout(this);
-    d->mainLayout->setContentsMargins(0, 0, 0, 0);
-    d->mainLayout->setSpacing(0);
-    d->mainLayout->addWidget(d->toolBar);
-    d->mainLayout->addWidget(d->splitter);
-    setLayout(d->mainLayout);
-
-    d->openAction = new QAction(tr("Open"), this);
-    d->openInTabAction = new QAction(tr("Open in new tab"), this);
-    d->openInWindowAction = new QAction(tr("Open in new window"), this);
-    d->openInTabsAction = new QAction(tr("Open in all tabs"), this);
-    d->editUrl = new QAction(tr("Edit url"), this);
-    d->editDescription = new QAction(tr("Edit description"), this);
-    d->renameAction = new QAction(tr("Rename"), this);
-    d->removeAction = new QAction(tr("Remove"), this);
+    QScopedPointer<QMenu> menu(createStandardContextMenu());
+    if (!menu)
+        return;
+    menu->exec(event->globalPos());
 }
 
-QModelIndex BookmarksWidget::selectedIndex()
+/*!
+    \internal
+*/
+void BookmarksWidget::onActivated(const QModelIndex &index)
 {
-    QWidget *w = focusWidget();
-    if (w == d->tableView) {
-        QModelIndexList indexes = d->tableView->selectionModel()->selectedIndexes();
-        if (!indexes.isEmpty())
-            return d->proxyModel->mapToSource(indexes.first());
-    } else if (w == d->treeView) {
-        QModelIndexList indexes = d->treeView->selectionModel()->selectedIndexes();
-        if (!indexes.isEmpty())
-            return d->folderProxy->mapToSource(indexes.first());
+    Q_D(BookmarksWidget);
+
+    const QModelIndex sourceIndex = d->proxyModel->mapToSource(index);
+    if (d->model->isFolder(sourceIndex)) {
+        d->proxyModel->setRootIndex(sourceIndex);
+        d->tableView->setRootIndex(index);
+    } else {
+        const QUrl url = d->model->data(sourceIndex, BookmarksModel::UrlRole).toUrl();
+        emit openRequested(QList<QUrl>() << url);
     }
-    return QModelIndex();
 }
 
-QModelIndex BookmarksWidget::selectedBookmarkIndex()
+/*!
+    \internal
+*/
+void BookmarksWidget::openTriggered()
 {
-    QModelIndexList indexes = d->tableView->selectionModel()->selectedIndexes();
-    if (!indexes.isEmpty() && d->model) {
-        QModelIndex index = d->proxyModel->mapToSource(indexes.first());
-        if (!d->model->isFolder(index))
-            return index;
+    QModelIndexList indexes = selectedIndexes();
+    if (indexes.count() == 1) {
+        QModelIndex index = indexes.first();
+        if (d_ptr->model->isFolder(index)) {
+            onActivated(d_ptr->proxyModel->mapFromSource(index));
+            return;
+        }
     }
 
-    return QModelIndex();
+    emit openRequested(urlsForIndexes(indexes));
 }
