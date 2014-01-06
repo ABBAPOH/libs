@@ -20,9 +20,11 @@ public:
         column(0)
     {}
 
+    void init();
     void clear();
     void populate();
-    void addCommand(const QModelIndex &index, AbstractCommand *before = 0);
+    void addContainer(const QModelIndex &index, AbstractCommand *before);
+    void addCommand(const QModelIndex &index, AbstractCommand *before);
 
 public:
     QAbstractItemModel *model;

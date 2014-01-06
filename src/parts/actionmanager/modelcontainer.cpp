@@ -5,12 +5,25 @@
 
 using namespace Parts;
 
+void ModelContainerPrivate::init()
+{
+    Q_Q(ModelContainer);
+
+    firstSeparator = new Separator(q);
+    firstSeparator->setVisible(false);
+    q->addCommand(firstSeparator);
+
+    lastSeparator = new Separator(q);
+    lastSeparator->setVisible(false);
+    q->addCommand(lastSeparator);
+}
+
 void ModelContainerPrivate::clear()
 {
     Q_Q(ModelContainer);
 
     int from = commands.indexOf(firstSeparator);
-    int till = commands.count();
+    int till = commands.indexOf(lastSeparator);
     for (int i = from + 1; i < till; ++i) {
         AbstractCommand * cmd = commands.at(from + 1);
         q->removeCommand(cmd);
@@ -23,8 +36,23 @@ void ModelContainerPrivate::populate()
 
     for (int row = 0; row < model->rowCount(root); ++row) {
         QModelIndex index = model->index(row, column, root);
-        addCommand(index, lastSeparator);
+        if (model->hasChildren(index))
+            addContainer(index, lastSeparator);
+        else
+            addCommand(index, lastSeparator);
     }
+}
+
+void ModelContainerPrivate::addContainer(const QModelIndex &index, AbstractCommand *before)
+{
+    Q_Q(ModelContainer);
+
+    ModelContainer *c = q->createContainer();
+    c->setText(index.data(Qt::DisplayRole).toString());
+    c->setIcon(index.data(Qt::DecorationRole).value<QIcon>());
+    c->setModel(model, index);
+    q->connect(c, SIGNAL(triggered(QModelIndex)), q, SIGNAL(triggered(QModelIndex)));
+    q->addCommand(c, before);
 }
 
 void ModelContainerPrivate::addCommand(const QModelIndex &index, AbstractCommand *before)
@@ -52,13 +80,19 @@ ModelContainer::ModelContainer(const QByteArray &id, QObject *parent) :
     CommandContainer(*new ModelContainerPrivate(this), id, parent)
 {
     Q_D(ModelContainer);
-    d->firstSeparator = new Separator(this);
-    d->firstSeparator->setVisible(false);
-    addCommand(d->firstSeparator);
+    d->init();
+}
 
-    d->lastSeparator = new Separator(this);
-    d->lastSeparator->setVisible(false);
-    addCommand(d->lastSeparator);
+/*!
+    Creates a container with id equal to this pointer.
+*/
+ModelContainer::ModelContainer(QObject *parent) :
+    CommandContainer(*new ModelContainerPrivate(this),
+                     QByteArray::number(quintptr(this)),
+                     parent)
+{
+    Q_D(ModelContainer);
+    d->init();
 }
 
 /*!
@@ -191,4 +225,9 @@ void ModelContainer::onCommandTriggered()
     int row = d->commands.indexOf(cmd) - offset;
     QModelIndex index = d->model->index(row, d->column, d->rootIndex);
     emit triggered(index);
+}
+
+ModelContainer *ModelContainer::createContainer()
+{
+    return new ModelContainer(this);
 }

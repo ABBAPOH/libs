@@ -20,6 +20,7 @@ class PARTS_EXPORT ModelContainer : public CommandContainer
 
 public:
     explicit ModelContainer(const QByteArray &id, QObject *parent = 0);
+    explicit ModelContainer(QObject *parent = 0);
 
     QAbstractItemModel *model() const;
     void setModel(QAbstractItemModel *model, const QModelIndex &rootIndex = QModelIndex());
@@ -33,10 +34,13 @@ signals:
     void triggered(const QModelIndex &index);
 
 protected slots:
-    void onModelReset();
-    void onRowsInserted(const QModelIndex &parent, int first, int last);
-    void onRowsRemoved(const QModelIndex &parent, int first, int last);
+    virtual void onModelReset();
+    virtual void onRowsInserted(const QModelIndex &parent, int first, int last);
+    virtual void onRowsRemoved(const QModelIndex &parent, int first, int last);
     void onCommandTriggered();
+
+protected:
+    virtual ModelContainer *createContainer();
 };
 
 } // namespace Parts

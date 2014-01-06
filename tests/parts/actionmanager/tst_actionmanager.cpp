@@ -107,11 +107,26 @@ void ActionManagerTest::testModelCommand()
         model.appendRow(item);
     }
 
+    QStandardItem *rootItem = new QStandardItem(QString("row 11"));
+    for (int i = 0; i < 10; ++i) {
+        QStandardItem *item = new QStandardItem(QString("Child row %1").arg(i));
+        rootItem->appendRow(item);
+    }
+    model.appendRow(rootItem);
+
     container.setModel(&model);
 
-    QVERIFY(container.commands().count() == 11);
+    QVERIFY(container.commands().count() == 12);
     for (int i = 0; i < 10; ++i) {
         QCOMPARE(container.commands().at(i+1)->text(), QString("row %1").arg(i));
+    }
+
+    QCOMPARE(container.commands().at(11)->text(), QString("row 11"));
+
+    CommandContainer *rootContainer = qobject_cast<CommandContainer *>(container.commands().at(11));
+    QVERIFY(rootContainer);
+    for (int i = 0; i < 10; ++i) {
+        QCOMPARE(rootContainer->commands().at(i+1)->text(), QString("Child row %1").arg(i));
     }
 
     for (int i = 0; i < 4; ++i) {
