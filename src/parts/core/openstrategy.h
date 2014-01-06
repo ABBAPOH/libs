@@ -1,6 +1,8 @@
 #ifndef OPENSTRATEGY_H
 #define OPENSTRATEGY_H
 
+#include "../parts_global.h"
+
 #include <QtCore/QObject>
 #include <QtCore/QStringList>
 #include <QtCore/QUrl>
@@ -8,7 +10,7 @@
 
 namespace Parts {
 
-class OpenStrategy : public QObject
+class PARTS_EXPORT OpenStrategy : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY(OpenStrategy)

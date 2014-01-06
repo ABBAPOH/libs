@@ -1338,7 +1338,7 @@ void FileManagerWidget::remove()
 
     // this is slow, but otherwise QFSM bugs when we remove files via copier.
     foreach (const QString &path, paths) {
-        d->model->remove(d->model->index(path));
+        d->model->itemModel()->remove(d->model->itemModel()->index(path));
     }
 #else
     d->fileSystemManager->remove(paths);

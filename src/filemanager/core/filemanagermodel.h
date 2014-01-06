@@ -1,6 +1,8 @@
 #ifndef FILEMANAGERMODEL_H
 #define FILEMANAGERMODEL_H
 
+#include "../filemanager_global.h"
+
 #include <QtCore/QObject>
 #include <QtCore/QUrl>
 
@@ -11,7 +13,7 @@ class FileSystemModel;
 class FileSystemManager;
 
 class FileManagerModelPrivate;
-class FileManagerModel : public QObject
+class FILEMANAGER_EXPORT FileManagerModel : public QObject
 {
     Q_OBJECT
     Q_DECLARE_PRIVATE(FileManagerModel)
