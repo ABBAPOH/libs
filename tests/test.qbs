@@ -3,6 +3,7 @@ import qbs.base 1.0
 Product {
     type: "application"
     destinationDirectory: project.install_binary_path
+    consoleApplication: true
 
     Depends { name: "cpp" }
     Depends { name: "Qt"; submodules: ["core", "test"] }
