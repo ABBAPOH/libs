@@ -243,7 +243,10 @@ void ActionManager::registerCommand(Command *cmd)
 {
     Q_D(ActionManager);
 
-    Q_ASSERT(!d->commands.contains(cmd->id()));
+    if (d->commands.contains(cmd->id())) {
+        qWarning() << "ActionManager already has command with id" << cmd->id();
+        return;
+    }
 
     d->commands.insert(cmd->id(), cmd);
     if (!cmd->parent())
@@ -259,7 +262,10 @@ void ActionManager::registerContainer(CommandContainer *c)
 {
     Q_D(ActionManager);
 
-    Q_ASSERT(!d->commands.contains(c->id()));
+    if (d->commands.contains(c->id())) {
+        qWarning() << "ActionManager already has container with id" << c->id();
+        return;
+    }
 
     d->commands.insert(c->id(), c);
     if (!c->parent())
