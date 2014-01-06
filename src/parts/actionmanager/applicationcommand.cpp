@@ -11,6 +11,14 @@
 
 using namespace Parts;
 
+void ApplicationCommandPrivate::init()
+{
+    Q_Q(ApplicationCommand);
+    action = new QAction(q);
+    q->connect(action, SIGNAL(toggled(bool)), q, SIGNAL(toggled(bool)));
+    q->connect(action, SIGNAL(triggered(bool)), q, SIGNAL(triggered(bool)));
+}
+
 void ApplicationCommandPrivate::onDefaultShortcutChanged(const QKeySequence &key)
 {
     action->setShortcut(key);
@@ -52,10 +60,14 @@ ApplicationCommand::ApplicationCommand(const QByteArray &id, QObject *parent) :
     Command(*new ApplicationCommandPrivate(this), id, parent)
 {
     Q_D(ApplicationCommand);
+    d->init();
+}
 
-    d->action = new QAction(this);
-    connect(d->action, SIGNAL(toggled(bool)), this, SIGNAL(toggled(bool)));
-    connect(d->action, SIGNAL(triggered(bool)), this, SIGNAL(triggered(bool)));
+ApplicationCommand::ApplicationCommand(QObject *parent) :
+    Command(*new ApplicationCommandPrivate(this), QByteArray::number(quintptr(this)), parent)
+{
+    Q_D(ApplicationCommand);
+    d->init();
 }
 
 /*!

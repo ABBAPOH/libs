@@ -18,6 +18,7 @@ class PARTS_EXPORT ApplicationCommand : public Command
 
 public:
     explicit ApplicationCommand(const QByteArray &id, QObject *parent = 0);
+    explicit ApplicationCommand(QObject *parent = 0);
     ~ApplicationCommand();
 
     const QAction *action() const;

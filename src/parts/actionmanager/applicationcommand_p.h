@@ -14,6 +14,8 @@ class ApplicationCommandPrivate : public CommandPrivate
 public:
     explicit ApplicationCommandPrivate(ApplicationCommand *qq) : CommandPrivate(qq) {}
 
+    void init();
+
     void onDefaultShortcutChanged(const QKeySequence &key);
     void onIconChanged(const QIcon &icon);
     void onShortcutChanged(const QKeySequence &key);
