@@ -123,6 +123,22 @@ void ApplicationCommand::setChecked(bool checked)
     emit changed();
 }
 
+bool ApplicationCommand::isEnabled() const
+{
+    Q_D(const ApplicationCommand);
+    return d->action->isEnabled();
+}
+
+void ApplicationCommand::setEnabled(bool enabled)
+{
+    Q_D(const ApplicationCommand);
+    if (d->action->isEnabled() == enabled)
+        return;
+
+    d->action->setEnabled(enabled);
+    emit changed();
+}
+
 /*!
     \reimp
 */

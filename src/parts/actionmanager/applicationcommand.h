@@ -14,6 +14,7 @@ class PARTS_EXPORT ApplicationCommand : public Command
 
     Q_PROPERTY(bool checkable READ isCheckable WRITE setCheckable)
     Q_PROPERTY(bool checked READ isChecked WRITE setChecked)
+    Q_PROPERTY(bool enabled READ isEnabled WRITE setEnabled)
 
 public:
     explicit ApplicationCommand(const QByteArray &id, QObject *parent = 0);
@@ -26,10 +27,13 @@ public:
 
     bool isChecked() const;
 
+    bool isEnabled() const;
+
     QAction *createAction(QObject *parent = 0) const;
 
 public slots:
     void setChecked(bool checked);
+    void setEnabled(bool enabled);
 
 signals:
     void toggled(bool checked);
