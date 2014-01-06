@@ -170,14 +170,3 @@ OpenStrategy *OpenStrategy::strategy(Qt::KeyboardModifiers modifiers)
     }
     return 0;
 }
-
-OpenStrategy *OpenStrategy::strategy(OpenStrategy::StrategyType type)
-{
-    if (type == TypeNone)
-        return 0;
-    foreach (OpenStrategy *strategy, strategies()) {
-        if (strategy->type() == type)
-            return strategy;
-    }
-    return 0;
-}

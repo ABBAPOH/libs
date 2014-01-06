@@ -18,8 +18,6 @@ public:
     explicit OpenStrategy(const QByteArray &id, QObject *parent = 0);
     ~OpenStrategy();
 
-    enum StrategyType { TypeNone, TypeOpenCurrentWindow, TypeOpenNewTab, TypeOpenNewWindow };
-
     QByteArray id() const;
 
     virtual bool canOpen(const QList<QUrl> &urls) = 0;
@@ -30,14 +28,11 @@ public:
     virtual QString toolTip() const { return QString(); }
     virtual QKeySequence keySequence() const { return QKeySequence(); }
     virtual Qt::KeyboardModifiers modifiers() const { return Qt::NoModifier; }
-    // TODO: remove ?
-    virtual StrategyType type() const { return TypeNone; }
 
     static QList<OpenStrategy *> strategies();
     static OpenStrategy *defaultStrategy();
     static OpenStrategy *strategy(const QByteArray &id);
     static OpenStrategy *strategy(Qt::KeyboardModifiers modifiers);
-    static OpenStrategy *strategy(StrategyType type);
 
 private:
     QByteArray m_id;
