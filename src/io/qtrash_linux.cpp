@@ -144,7 +144,7 @@ static void readInfoFile(const QString &infoPath, QTrashFileInfoData &data)
     QSettings info(infoPath, QSettings::IniFormat);
     info.beginGroup(QLatin1String("Trash Info"));
 
-    data.originalPath = QString::fromUtf8(QByteArray::fromPercentEncoding(info.value(QLatin1String("Path")).toString().toAscii()).data());
+    data.originalPath = QString::fromUtf8(QByteArray::fromPercentEncoding(info.value(QLatin1String("Path")).toString().toLatin1()).data());
     if (!QFileInfo(data.originalPath).isAbsolute())
         data.originalPath = QDriveInfo(infoPath).rootPath() + '/' + data.originalPath;
     data.deletionDateTime = QDateTime::fromString(info.value(QLatin1String("DeletionDate")).toString(), Qt::ISODate);

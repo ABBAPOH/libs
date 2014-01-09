@@ -1,5 +1,7 @@
 #include "qdriveinfo_p.h"
 
+#include <qplatformdefs.h>
+
 #include <QtCore/QDirIterator>
 #include <QtCore/QTextStream>
 
