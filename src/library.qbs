@@ -7,15 +7,12 @@ DynamicLibrary {
     cpp.includePaths : "../../include"
     cpp.dynamicLibraryPrefix: "lib"
 
-    Properties {
-        condition: qbs.targetOS.contains("osx")
-        cpp.installNamePrefix: project.installNamePrefix
-    }
+    bundle.isBundle: false
 
-    Properties {
-         condition: qbs.targetOS.contains("linux") || qbs.targetOS.contains("unix")
-         cpp.rpaths: "$ORIGIN"
-    }
+    cpp.installNamePrefix: "@rpath/Frameworks"
+    cpp.rpaths: qbs.targetOS.contains("osx")
+                ? [ "@loader_path/..", "@executable_path/.." ]
+                : [ "$ORIGIN" ]
 
     Group {
         fileTagsFilter: product.type
