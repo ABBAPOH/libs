@@ -9,6 +9,7 @@ DynamicLibrary {
 
     bundle.isBundle: false
 
+    cpp.cxxLanguageVersion: "c++11"
     cpp.installNamePrefix: "@rpath/Frameworks"
     cpp.rpaths: qbs.targetOS.contains("osx")
                 ? [ "@loader_path/..", "@executable_path/.." ]
